@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  propus_spool:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: propus_spool
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=${DATABASE_URL:-sqlite:////data/propus_spool.db}
+      - SPOOLMAN_URL=${SPOOLMAN_URL:-http://localhost:7912}
+      - SPOOLMAN_API_KEY=${SPOOLMAN_API_KEY:-}
+      - WRITE_MODE=${WRITE_MODE:-false}
+      - PUSH_REMAINING_TO_SPOOLMAN=${PUSH_REMAINING_TO_SPOOLMAN:-true}
+      - ENABLE_KLIPPER=${ENABLE_KLIPPER:-false}
+    volumes:
+      - ./data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+
+  # Optional: PostgreSQL database
+  # Uncomment if you want to use PostgreSQL instead of SQLite
+  # postgres:
+  #   image: postgres:15-alpine
+  #   container_name: propus_spool_db
+  #   environment:
+  #     - POSTGRES_USER=propus
+  #     - POSTGRES_PASSWORD=propus_password
+  #     - POSTGRES_DB=propus_spool
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   restart: unless-stopped
+
+# volumes:
+#   postgres_data:
