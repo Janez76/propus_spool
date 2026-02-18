@@ -1,0 +1,43 @@
+version: '3.8'
+
+# Development configuration with PostgreSQL
+services:
+  propus_spool:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: propus_spool_dev
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://propus:propus_password@postgres:5432/propus_spool
+      - SPOOLMAN_URL=${SPOOLMAN_URL:-http://localhost:7912}
+      - SPOOLMAN_API_KEY=${SPOOLMAN_API_KEY:-}
+      - WRITE_MODE=${WRITE_MODE:-false}
+      - PUSH_REMAINING_TO_SPOOLMAN=${PUSH_REMAINING_TO_SPOOLMAN:-true}
+      - ENABLE_KLIPPER=${ENABLE_KLIPPER:-false}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: propus_spool_db
+    environment:
+      - POSTGRES_USER=propus
+      - POSTGRES_PASSWORD=propus_password
+      - POSTGRES_DB=propus_spool
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U propus"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
