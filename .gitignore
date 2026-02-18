@@ -81,3 +81,6 @@ Thumbs.db
 tmp/
 temp/
 *.tmp
+
+# Test scripts
+test_workflow.sh
