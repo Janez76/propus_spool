@@ -20,7 +20,8 @@ async def health_check(db: Session = Depends(get_db)):
     """
     # Check database
     try:
-        db.execute("SELECT 1")
+        from sqlalchemy import text
+        db.execute(text("SELECT 1"))
         db_status = "ok"
     except Exception as e:
         db_status = f"error: {str(e)}"

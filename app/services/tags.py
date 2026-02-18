@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime
 from app.models import Tag, SpoolMap, SpoolState
-from app.schemas import TagResponse, TagDetailResponse, SpoolMapCreate, SpoolMapResponse, SpoolStateResponse
+from app.schemas import TagResponse, TagDetailResponse, SpoolMapCreate, SpoolMapResponse
 import logging
 
 logger = logging.getLogger(__name__)
@@ -25,11 +25,27 @@ def get_tag_detail(db: Session, uid: str) -> Optional[TagDetailResponse]:
     
     # Get spool mapping
     spool_map = db.query(SpoolMap).filter(SpoolMap.uid == uid).first()
-    spool_mapping = SpoolMapResponse.model_validate(spool_map) if spool_map else None
+    spool_mapping = None
+    if spool_map:
+        spool_mapping = {
+            "uid": spool_map.uid,
+            "spoolman_spool_id": spool_map.spoolman_spool_id,
+            "assigned_at": spool_map.assigned_at,
+            "assigned_by": spool_map.assigned_by
+        }
     
     # Get spool state
     spool_state = db.query(SpoolState).filter(SpoolState.uid == uid).first()
-    state = SpoolStateResponse.model_validate(spool_state) if spool_state else None
+    state = None
+    if spool_state:
+        state = {
+            "uid": spool_state.uid,
+            "gross_weight_g": spool_state.gross_weight_g,
+            "tare_weight_g": spool_state.tare_weight_g,
+            "net_weight_g": spool_state.net_weight_g,
+            "last_weight_at": spool_state.last_weight_at,
+            "status": spool_state.status
+        }
     
     return TagDetailResponse(
         uid=tag.uid,

@@ -50,8 +50,8 @@ class TagResponse(TagBase):
 
 class TagDetailResponse(TagResponse):
     """Detailed tag response with related data"""
-    spool_mapping: Optional["SpoolMapResponse"] = None
-    spool_state: Optional["SpoolStateResponse"] = None
+    spool_mapping: Optional[dict] = None  # Will be SpoolMapResponse
+    spool_state: Optional[dict] = None  # Will be SpoolStateResponse
 
 
 # Spool Map Schemas
