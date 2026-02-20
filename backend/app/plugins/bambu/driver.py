@@ -80,10 +80,20 @@ class Driver(BaseDriver):
         }
 
     def get_camera_config(self) -> dict[str, str] | None:
+        cam_type = self.config.get("camera_type", "rtsp")
+        if cam_type == "none":
+            return None
+
+        cam_url = self.config.get("camera_url", "")
         host = self.config.get("host")
         access_code = self.config.get("access_code")
+
+        if cam_url:
+            return {"type": cam_type, "url": cam_url}
+
         if host and access_code:
             return {
+                "type": "rtsp",
                 "url": f"rtsps://{host}/streaming/live/1",
                 "user": MQTT_USERNAME,
                 "password": access_code,

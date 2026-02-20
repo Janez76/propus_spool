@@ -160,7 +160,13 @@ async def get_printers_status(
     out: list[dict] = []
     for p in printers:
         ps = all_status.get(p.id, {})
-        has_camera = plugin_manager.get_camera_config(p.id) is not None
+        cam_cfg = plugin_manager.get_camera_config(p.id)
+        if cam_cfg is None and p.driver_config:
+            ct = p.driver_config.get("camera_type", "none")
+            cu = p.driver_config.get("camera_url", "")
+            if ct != "none" and cu:
+                cam_cfg = {"type": ct, "url": cu}
+        has_camera = cam_cfg is not None
 
         if p.driver_key == "bambu":
             gcode_state = ps.get("gcode_state", "IDLE")
@@ -301,21 +307,64 @@ async def get_camera_snapshot(
     if cached and (now - cached[1]) < CAMERA_CACHE_TTL:
         return Response(content=cached[0], media_type="image/jpeg")
 
+    cam_type = cam.get("type", "rtsp")
     url = cam["url"]
-    user = cam.get("user", "")
-    password = cam.get("password", "")
 
     try:
-        jpeg_bytes = await asyncio.get_event_loop().run_in_executor(
-            None, _grab_rtsp_frame, url, user, password
-        )
+        if cam_type in ("mjpeg_snapshot", "http_image"):
+            jpeg_bytes = await _grab_http_frame(url)
+        elif cam_type == "mjpeg_stream":
+            jpeg_bytes = await _grab_mjpeg_frame(url)
+        else:
+            user = cam.get("user", "")
+            password = cam.get("password", "")
+            jpeg_bytes = await asyncio.get_event_loop().run_in_executor(
+                None, _grab_rtsp_frame, url, user, password
+            )
+
         if jpeg_bytes:
             _camera_cache[printer_id] = (jpeg_bytes, now)
             return Response(content=jpeg_bytes, media_type="image/jpeg")
     except Exception as e:
-        logger.warning(f"Camera snapshot failed for printer {printer_id}: {e}")
+        logger.warning(f"Camera snapshot failed for printer {printer_id} ({cam_type}): {e}")
 
     raise HTTPException(status_code=503, detail="Camera snapshot unavailable")
+
+
+async def _grab_http_frame(url: str) -> bytes | None:
+    """Fetch a single JPEG/PNG image from an HTTP URL."""
+    import httpx
+    try:
+        async with httpx.AsyncClient(timeout=5, verify=False) as client:
+            resp = await client.get(url)
+            if resp.status_code == 200 and len(resp.content) > 100:
+                return resp.content
+    except Exception as e:
+        logger.warning(f"HTTP camera fetch failed: {e}")
+    return None
+
+
+async def _grab_mjpeg_frame(url: str) -> bytes | None:
+    """Extract a single JPEG frame from an MJPEG stream."""
+    import httpx
+    try:
+        async with httpx.AsyncClient(timeout=5, verify=False) as client:
+            async with client.stream("GET", url) as resp:
+                buf = b""
+                start = -1
+                async for chunk in resp.aiter_bytes():
+                    buf += chunk
+                    if start < 0:
+                        start = buf.find(b"\xff\xd8")
+                    if start >= 0:
+                        end = buf.find(b"\xff\xd9", start + 2)
+                        if end >= 0:
+                            return buf[start:end + 2]
+                    if len(buf) > 2 * 1024 * 1024:
+                        break
+    except Exception as e:
+        logger.warning(f"MJPEG stream frame grab failed: {e}")
+    return None
 
 
 def _grab_rtsp_frame(url: str, user: str, password: str) -> bytes | None:

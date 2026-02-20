@@ -64,6 +64,15 @@ class Driver(BaseDriver):
             "print_state": dict(self._print_state),
         }
 
+    def get_camera_config(self) -> dict[str, str] | None:
+        cam_type = self.config.get("camera_type", "none")
+        if cam_type == "none":
+            return None
+        cam_url = self.config.get("camera_url", "")
+        if not cam_url:
+            return None
+        return {"type": cam_type, "url": cam_url}
+
     def _emit_initial_state(self) -> None:
         """Emit an ams_state event to create slots for multi-filament printers."""
         if self._initial_state_sent:

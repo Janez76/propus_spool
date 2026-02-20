@@ -291,13 +291,62 @@ import Layout from '../../layouts/Layout.astro'
     
     let currentDriverConfig: Record<string, any> = {}
 
+    const CAM_TYPES: Record<string, { label: string; hint: string; placeholder: string }> = {
+      none:            { label: 'Deaktiviert',     hint: '', placeholder: '' },
+      mjpeg_snapshot:  { label: 'MJPEG Snapshot',  hint: 'Einzelbild-URL (z.B. Crowsnest, mjpg-streamer)', placeholder: 'http://192.168.1.x/webcam/?action=snapshot' },
+      mjpeg_stream:    { label: 'MJPEG Stream',    hint: 'MJPEG-Endlosstream (z.B. /webcam/?action=stream)', placeholder: 'http://192.168.1.x/webcam/?action=stream' },
+      rtsp:            { label: 'RTSP (via ffmpeg)', hint: 'RTSP(S)-Stream – Frame wird per ffmpeg extrahiert', placeholder: 'rtsps://192.168.1.x/streaming/live/1' },
+      http_image:      { label: 'HTTP Bild-URL',   hint: 'Statisches JPEG/PNG-Bild – z.B. ESP32-CAM', placeholder: 'http://192.168.1.x/cam.jpg' },
+    }
+
+    function camSectionHtml(driverKey: string): string {
+      const camType = currentDriverConfig.camera_type || (driverKey === 'bambu' ? 'rtsp' : 'none')
+      const camUrl = currentDriverConfig.camera_url || ''
+      const opts = Object.entries(CAM_TYPES).map(([k, v]) =>
+        `<option value="${k}" ${k === camType ? 'selected' : ''}>${v.label}</option>`
+      ).join('')
+      const ct = CAM_TYPES[camType]
+      const urlVisible = camType !== 'none'
+      return `
+        <div style="border-top: 1px solid var(--border-subtle); padding-top: 14px; margin-top: 6px;">
+          <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px;">Kamera / Live-Ansicht</div>
+          <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 12px;">
+            <div>
+              <label for="cfg-cam-type" class="fm-label">Typ</label>
+              <select id="cfg-cam-type" class="fm-select">${opts}</select>
+            </div>
+            <div id="cam-url-wrap" ${urlVisible ? '' : 'style="display:none;"'}>
+              <label for="cfg-cam-url" class="fm-label">URL</label>
+              <input type="text" id="cfg-cam-url" class="fm-input" placeholder="${ct?.placeholder || ''}" value="${camUrl}" />
+              ${ct?.hint ? `<p style="font-size: 0.72rem; color: var(--text-muted); margin-top: 3px;">${ct.hint}</p>` : ''}
+            </div>
+          </div>
+        </div>`
+    }
+
+    function bindCamTypeChange() {
+      document.getElementById('cfg-cam-type')?.addEventListener('change', () => {
+        const sel = (document.getElementById('cfg-cam-type') as HTMLSelectElement).value
+        const wrap = document.getElementById('cam-url-wrap')!
+        const urlInput = document.getElementById('cfg-cam-url') as HTMLInputElement
+        if (sel === 'none') {
+          wrap.style.display = 'none'
+        } else {
+          wrap.style.display = ''
+          const ct = CAM_TYPES[sel]
+          if (ct) urlInput.placeholder = ct.placeholder
+        }
+      })
+    }
+
     function renderDriverConfigFields(driverKey: string) {
       const container = document.getElementById('driver-config-fields')!
       if (driverKey === 'bambu') {
         container.innerHTML = `
+          <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px;">VERBINDUNG</div>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
             <div>
-              <label for="cfg-host" class="fm-label">IP-Adresse *</label>
+              <label for="cfg-host" class="fm-label">IP *</label>
               <input type="text" id="cfg-host" class="fm-input" placeholder="192.168.1.x" value="${currentDriverConfig.host || ''}" required />
             </div>
             <div>
@@ -305,9 +354,12 @@ import Layout from '../../layouts/Layout.astro'
               <input type="text" id="cfg-access-code" class="fm-input" placeholder="8-stelliger Code" value="${currentDriverConfig.access_code || ''}" required />
             </div>
           </div>
+          ${camSectionHtml(driverKey)}
         `
+        bindCamTypeChange()
       } else if (driverKey === 'klipper') {
         container.innerHTML = `
+          <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px;">VERBINDUNG</div>
           <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 16px;">
             <div>
               <label for="cfg-host" class="fm-label">Moonraker URL *</label>
@@ -323,7 +375,9 @@ import Layout from '../../layouts/Layout.astro'
             <input type="number" id="cfg-slots" class="fm-input" min="1" max="8" value="${currentDriverConfig.slots || 1}" style="max-width: 120px;" />
             <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">z.B. 4 für Snapmaker U1 mit AMS Lite</p>
           </div>
+          ${camSectionHtml(driverKey)}
         `
+        bindCamTypeChange()
       } else {
         container.innerHTML = ''
       }
@@ -344,6 +398,13 @@ import Layout from '../../layouts/Layout.astro'
         const slotsVal = (document.getElementById('cfg-slots') as HTMLInputElement)?.value || '1'
         cfg = { host, slots: parseInt(slotsVal) || 1 }
         if (apiKey) cfg.api_key = apiKey
+      }
+
+      const camType = (document.getElementById('cfg-cam-type') as HTMLSelectElement)?.value || 'none'
+      const camUrl = (document.getElementById('cfg-cam-url') as HTMLInputElement)?.value || ''
+      if (cfg) {
+        cfg.camera_type = camType
+        if (camType !== 'none' && camUrl) cfg.camera_url = camUrl
       }
 
       if (cfg && selectedPreset && PRINTER_PRESETS[selectedPreset]) {
