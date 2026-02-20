@@ -112,7 +112,7 @@ class Driver(BaseDriver):
                             })
 
             except httpx.RequestError as e:
-                logger.debug(f"Klipper poll error for printer {self.printer_id}: {e}")
+                logger.info(f"Klipper poll error for printer {self.printer_id}: {e}")
                 self._printer_state = "unreachable"
             except Exception as e:
                 logger.warning(f"Klipper poll error for printer {self.printer_id}: {e}")
@@ -128,7 +128,12 @@ class Driver(BaseDriver):
         """Read tN__spool_id variables from Klipper save_variables for each slot."""
         variables = await self._get_save_variables(client, host)
         if variables is None:
+            logger.info(f"Klipper printer {self.printer_id}: save_variables returned None")
             return
+        logger.info(
+            f"Klipper printer {self.printer_id}: polled {slots_count} slots, "
+            f"variables keys={[k for k in variables if 'spool' in k and variables[k] not in ('', None)]}"
+        )
 
         for tool_idx in range(slots_count):
             slot_no = tool_idx + 1
@@ -180,8 +185,11 @@ class Driver(BaseDriver):
                     .get("save_variables", {})
                     .get("variables", {})
                 )
-        except Exception:
-            pass
+            logger.info(
+                f"Klipper printer {self.printer_id}: save_variables status {resp.status_code}"
+            )
+        except Exception as e:
+            logger.info(f"Klipper printer {self.printer_id}: save_variables error: {e}")
         return None
 
     async def _get_printer_info(self, client: httpx.AsyncClient, host: str) -> dict | None:
