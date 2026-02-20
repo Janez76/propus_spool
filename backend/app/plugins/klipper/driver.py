@@ -25,6 +25,7 @@ class Driver(BaseDriver):
         super().__init__(printer_id, config, emitter)
         self._task: asyncio.Task | None = None
         self._printer_state: str = "unknown"
+        self._initial_state_sent = False
 
     def validate_config(self) -> None:
         host = self.config.get("host")
@@ -33,6 +34,7 @@ class Driver(BaseDriver):
 
     async def start(self) -> None:
         self._running = True
+        self._initial_state_sent = False
         self._task = asyncio.create_task(self._poll_loop())
         logger.info(f"Klipper driver started for printer {self.printer_id}")
 
@@ -54,9 +56,26 @@ class Driver(BaseDriver):
             "printer_state": self._printer_state,
         }
 
-    # ------------------------------------------------------------------ #
-    #  Poll loop
-    # ------------------------------------------------------------------ #
+    def _emit_initial_state(self) -> None:
+        """Emit an ams_state event to create slots for multi-filament printers."""
+        if self._initial_state_sent:
+            return
+        self._initial_state_sent = True
+
+        slots_count = int(self.config.get("slots", 1))
+        if slots_count <= 1:
+            return
+
+        slots = [{"slot_no": i + 1, "present": False} for i in range(slots_count)]
+        self.emit({
+            "event_type": "ams_state",
+            "ams_units": [{
+                "ams_unit_no": 0,
+                "slots_total": slots_count,
+                "slots": slots,
+            }],
+        })
+        logger.info(f"Klipper initialized {slots_count} slots for printer {self.printer_id}")
 
     async def _poll_loop(self) -> None:
         host = self.config["host"].rstrip("/")
@@ -64,6 +83,8 @@ class Driver(BaseDriver):
         headers = {}
         if api_key:
             headers["X-Api-Key"] = api_key
+
+        self._emit_initial_state()
 
         while self._running:
             try:

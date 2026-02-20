@@ -5,7 +5,7 @@ from sqlalchemy.orm import selectinload
 
 from app.api.deps import DBSession, PrincipalDep, RequirePermission
 from app.api.v1.schemas import PaginatedResponse
-from app.models import Location, Printer, PrinterAmsUnit, PrinterSlot, PrinterSlotAssignment
+from app.models import Location, Printer, PrinterAmsUnit, PrinterSlot, PrinterSlotAssignment, Spool
 
 router = APIRouter(prefix="/printers", tags=["printers"])
 
@@ -278,6 +278,82 @@ async def delete_ams_unit(
 
     await db.delete(ams_unit)
     await db.commit()
+
+
+class SlotAssignRequest(BaseModel):
+    spool_id: int | None = None
+
+
+@router.put("/{printer_id}/ams-units/{unit_id}/slots/{slot_no}/assign")
+async def assign_spool_to_slot(
+    printer_id: int,
+    unit_id: int,
+    slot_no: int,
+    body: SlotAssignRequest,
+    db: DBSession = None,
+    principal=RequirePermission("printers:update"),
+):
+    from datetime import datetime as dt
+
+    result = await db.execute(
+        select(PrinterAmsUnit).where(
+            PrinterAmsUnit.id == unit_id,
+            PrinterAmsUnit.printer_id == printer_id,
+        )
+    )
+    ams_unit = result.scalar_one_or_none()
+    if not ams_unit:
+        raise HTTPException(status_code=404, detail={"code": "not_found", "message": "AMS unit not found"})
+
+    if body.spool_id is not None:
+        result = await db.execute(select(Spool).where(Spool.id == body.spool_id, Spool.deleted_at.is_(None)))
+        if not result.scalar_one_or_none():
+            raise HTTPException(status_code=400, detail={"code": "validation_error", "message": "Spool not found"})
+
+    result = await db.execute(
+        select(PrinterSlot).where(
+            PrinterSlot.printer_id == printer_id,
+            PrinterSlot.is_ams_slot == True,
+            PrinterSlot.ams_unit_id == unit_id,
+            PrinterSlot.slot_no == slot_no,
+        )
+    )
+    slot = result.scalar_one_or_none()
+
+    if not slot:
+        slot = PrinterSlot(
+            printer_id=printer_id,
+            is_ams_slot=True,
+            ams_unit_id=unit_id,
+            slot_no=slot_no,
+        )
+        db.add(slot)
+        await db.flush()
+
+    result = await db.execute(
+        select(PrinterSlotAssignment).where(PrinterSlotAssignment.slot_id == slot.id)
+    )
+    assignment = result.scalar_one_or_none()
+
+    if not assignment:
+        assignment = PrinterSlotAssignment(slot_id=slot.id)
+        db.add(assignment)
+
+    if body.spool_id is not None:
+        assignment.spool_id = body.spool_id
+        assignment.present = True
+        assignment.inserted_at = dt.utcnow()
+    else:
+        assignment.spool_id = None
+        assignment.present = False
+        assignment.rfid_uid = None
+        assignment.external_id = None
+        assignment.meta = None
+
+    assignment.updated_at = dt.utcnow()
+    await db.commit()
+
+    return {"ok": True, "slot_no": slot_no, "spool_id": body.spool_id}
 
 
 @router.get("/{printer_id}/ams-units", response_model=list[AmsUnitResponse])

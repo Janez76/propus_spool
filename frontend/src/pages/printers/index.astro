@@ -255,6 +255,11 @@ import Layout from '../../layouts/Layout.astro'
               <input type="text" id="cfg-api-key" class="fm-input" placeholder="Optional" value="${currentDriverConfig.api_key || ''}" />
             </div>
           </div>
+          <div style="margin-top: 12px;">
+            <label for="cfg-slots" class="fm-label">Anzahl Filament-Slots</label>
+            <input type="number" id="cfg-slots" class="fm-input" min="1" max="8" value="${currentDriverConfig.slots || 1}" style="max-width: 120px;" />
+            <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">z.B. 4 für Snapmaker U1 mit AMS Lite</p>
+          </div>
         `
       } else {
         container.innerHTML = ''
@@ -271,7 +276,8 @@ import Layout from '../../layouts/Layout.astro'
         const host = (document.getElementById('cfg-host') as HTMLInputElement)?.value || ''
         if (!host) return null
         const apiKey = (document.getElementById('cfg-api-key') as HTMLInputElement)?.value || ''
-        const cfg: Record<string, any> = { host }
+        const slotsVal = (document.getElementById('cfg-slots') as HTMLInputElement)?.value || '1'
+        const cfg: Record<string, any> = { host, slots: parseInt(slotsVal) || 1 }
         if (apiKey) cfg.api_key = apiKey
         return cfg
       }

@@ -34,6 +34,7 @@ const { id } = Astro.params
     <div id="ams-units" style="display: flex; flex-direction: column; gap: 16px;"></div>
   </div>
   
+  <!-- AMS Unit Modal -->
   <div id="modal-container" class="fm-modal-overlay">
     <div class="fm-card" style="width: 100%; max-width: 28rem; margin: 0 1rem; padding: 24px;">
       <h3 id="modal-title" style="font-size: 1.15rem; font-weight: 600; margin-bottom: 16px;" data-i18n="printers.addAmsUnit">Add AMS Unit</h3>
@@ -42,51 +43,35 @@ const { id } = Astro.params
           <label for="ams-unit-no" class="fm-label" data-i18n="printers.unitNumber">
             Unit Number *
           </label>
-          <input
-            type="number"
-            id="ams-unit-no"
-            required
-            min="0"
-            value="0"
-            class="fm-input"
-          />
+          <input type="number" id="ams-unit-no" required min="0" value="0" class="fm-input" />
         </div>
         <div>
-          <label for="ams-name" class="fm-label" data-i18n="printers.unitName">
-            Name
-          </label>
-          <input
-            type="text"
-            id="ams-name"
-            data-i18n-placeholder="printers.unitNamePlaceholder"
-            placeholder="e.g. Left AMS"
-            class="fm-input"
-          />
+          <label for="ams-name" class="fm-label" data-i18n="printers.unitName">Name</label>
+          <input type="text" id="ams-name" data-i18n-placeholder="printers.unitNamePlaceholder" placeholder="e.g. Left AMS" class="fm-input" />
         </div>
         <div>
-          <label for="ams-slots" class="fm-label" data-i18n="printers.numberOfSlots">
-            Number of Slots *
-          </label>
-          <input
-            type="number"
-            id="ams-slots"
-            required
-            min="1"
-            max="8"
-            value="4"
-            class="fm-input"
-          />
+          <label for="ams-slots" class="fm-label" data-i18n="printers.numberOfSlots">Number of Slots *</label>
+          <input type="number" id="ams-slots" required min="1" max="8" value="4" class="fm-input" />
         </div>
         <div id="modal-error" class="fm-alert-error hidden"></div>
         <div style="display: flex; gap: 12px;">
-          <button type="submit" id="modal-submit" class="fm-btn fm-btn-primary" data-i18n="common.add">
-            Add
-          </button>
-          <button type="button" id="modal-cancel" class="fm-btn fm-btn-outline" data-i18n="common.cancel">
-            Cancel
-          </button>
+          <button type="submit" id="modal-submit" class="fm-btn fm-btn-primary" data-i18n="common.add">Add</button>
+          <button type="button" id="modal-cancel" class="fm-btn fm-btn-outline" data-i18n="common.cancel">Cancel</button>
         </div>
       </form>
+    </div>
+  </div>
+  
+  <!-- Spool Assignment Modal -->
+  <div id="spool-modal" class="fm-modal-overlay">
+    <div class="fm-card" style="width: 100%; max-width: 36rem; margin: 0 1rem; padding: 24px; max-height: 80vh; display: flex; flex-direction: column;">
+      <h3 id="spool-modal-title" style="font-size: 1.15rem; font-weight: 600; margin-bottom: 12px;">Spule zuweisen</h3>
+      <input type="text" id="spool-search" placeholder="Suchen..." class="fm-input" style="margin-bottom: 12px;" />
+      <div id="spool-list" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; min-height: 200px;"></div>
+      <div style="display: flex; gap: 12px; margin-top: 16px;">
+        <button type="button" id="spool-unassign" class="fm-btn fm-btn-outline" style="display: none;">Zuweisung aufheben</button>
+        <button type="button" id="spool-modal-cancel" class="fm-btn fm-btn-outline" data-i18n="common.cancel">Cancel</button>
+      </div>
     </div>
   </div>
   
@@ -97,29 +82,46 @@ const { id } = Astro.params
     const id = window.location.pathname.split('/').filter(Boolean).pop()!
 
     let printer: any = null
+    let refreshTimer: number | null = null
+    let spoolsCache: any[] = []
+    let filamentsCache: any[] = []
+    let pendingSlot: { unitId: number; slotNo: number; currentSpoolId: number | null } | null = null
     
     function getCsrfToken(): string {
       const match = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]*)/)
       return match ? decodeURIComponent(match[1]) : ''
     }
+
+    function startRefresh() {
+      stopRefresh()
+      refreshTimer = window.setInterval(() => loadPrinter(true), 5000)
+    }
+
+    function stopRefresh() {
+      if (refreshTimer) {
+        clearInterval(refreshTimer)
+        refreshTimer = null
+      }
+    }
     
-    async function loadPrinter() {
+    async function loadPrinter(silent = false) {
       try {
         const response = await fetch(`/api/v1/printers/${id}`, { credentials: 'include' })
         
         if (!response.ok) {
-          if (response.status === 404) {
+          if (response.status === 404 && !silent) {
             document.getElementById('printer-content')!.innerHTML = `<div style="color: var(--error-text);">${t('printers.notFound')}</div>`
-            return
           }
-          throw new Error('Failed to fetch printer')
+          return
         }
         
         printer = await response.json()
         renderPrinter()
       } catch (error) {
-        console.error('Failed to load printer:', error)
-        document.getElementById('printer-content')!.innerHTML = `<div style="color: var(--error-text);">${t('printers.failedLoad')}</div>`
+        if (!silent) {
+          console.error('Failed to load printer:', error)
+          document.getElementById('printer-content')!.innerHTML = `<div style="color: var(--error-text);">${t('printers.failedLoad')}</div>`
+        }
       }
     }
     
@@ -166,49 +168,36 @@ const { id } = Astro.params
       
       document.getElementById('btn-delete')?.addEventListener('click', async () => {
         if (!(await (window as any).__fmConfirm(t('printers.confirmDelete')))) return
-        
         try {
           const response = await fetch(`/api/v1/printers/${id}`, {
             method: 'DELETE',
             headers: { 'X-CSRF-Token': getCsrfToken() },
             credentials: 'include',
           })
-          
-          if (response.ok) {
-            window.location.href = '/printers'
-          } else {
-            await (window as any).__fmAlert(t('printers.failedDelete'))
-          }
-        } catch {
-          await (window as any).__fmAlert(t('printers.failedDelete'))
-        }
+          if (response.ok) { window.location.href = '/printers' }
+          else { await (window as any).__fmAlert(t('printers.failedDelete')) }
+        } catch { await (window as any).__fmAlert(t('printers.failedDelete')) }
       })
       
       document.getElementById('btn-toggle-active')?.addEventListener('click', async () => {
         try {
           const response = await fetch(`/api/v1/printers/${id}`, {
             method: 'PATCH',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-CSRF-Token': getCsrfToken(),
-            },
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken() },
             credentials: 'include',
             body: JSON.stringify({ is_active: !printer.is_active }),
           })
-          
-          if (response.ok) {
-            loadPrinter()
-          } else {
-            await (window as any).__fmAlert(t('printers.failedUpdate'))
-          }
-        } catch {
-          await (window as any).__fmAlert(t('printers.failedUpdate'))
-        }
+          if (response.ok) { loadPrinter() }
+          else { await (window as any).__fmAlert(t('printers.failedUpdate')) }
+        } catch { await (window as any).__fmAlert(t('printers.failedUpdate')) }
       })
       
       if (printer.ams_units && printer.ams_units.length > 0) {
         document.getElementById('ams-section')!.classList.remove('hidden')
         renderAmsUnits()
+      } else {
+        document.getElementById('ams-section')!.classList.remove('hidden')
+        document.getElementById('ams-units')!.innerHTML = `<p style="color: var(--text-muted);">Keine AMS-Einheiten. Füge eine hinzu oder warte auf die automatische Erkennung.</p>`
       }
     }
     
@@ -228,24 +217,30 @@ const { id } = Astro.params
           const material = meta.material || ''
           const colorHex = meta.color_hex || ''
           const remain = meta.remain_percent
+          const spoolId = a?.spool_id
+
+          const clickAttr = `data-unit-id="${unit.id}" data-slot-no="${slotNo}" data-spool-id="${spoolId || ''}"`
 
           if (present) {
             const colorSwatch = colorHex
-              ? `<span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:#${colorHex};border:1px solid rgba(255,255,255,0.2);vertical-align:middle;margin-right:4px;"></span>`
+              ? `<span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:#${colorHex.substring(0,6)};border:1px solid rgba(255,255,255,0.2);vertical-align:middle;margin-right:4px;"></span>`
               : ''
             const remainText = remain != null ? `${remain}%` : ''
+            const spoolLabel = spoolId ? `<div style="font-size:0.65rem;color:var(--accent-2);margin-top:2px;">Spool #${spoolId}</div>` : ''
             return `
-              <div style="padding: 12px; background: var(--bg-soft); border-radius: var(--radius-sm); text-align: center; border: 1px solid var(--accent-2);">
+              <div class="slot-card" ${clickAttr} style="padding: 12px; background: var(--bg-soft); border-radius: var(--radius-sm); text-align: center; border: 1px solid var(--accent-2); cursor: pointer; transition: transform 0.1s;" onmouseenter="this.style.transform='scale(1.03)'" onmouseleave="this.style.transform='scale(1)'">
                 <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;">${t('printers.slotLabel', { no: slotNo })}</div>
                 <div style="font-size: 0.9rem; font-weight: 600; margin-bottom: 2px;">${colorSwatch}${material || '?'}</div>
                 ${remainText ? `<div style="font-size: 0.75rem; color: var(--text-muted);">${remainText}</div>` : ''}
+                ${spoolLabel}
               </div>`
           }
 
           return `
-            <div style="padding: 12px; background: var(--bg-soft); border-radius: var(--radius-sm); text-align: center;">
+            <div class="slot-card" ${clickAttr} style="padding: 12px; background: var(--bg-soft); border-radius: var(--radius-sm); text-align: center; cursor: pointer; border: 1px dashed rgba(255,255,255,0.1); transition: transform 0.1s;" onmouseenter="this.style.transform='scale(1.03)'" onmouseleave="this.style.transform='scale(1)'">
               <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;">${t('printers.slotLabel', { no: slotNo })}</div>
               <div style="font-size: 0.85rem; font-weight: 500; color: var(--text-muted);">${t('common.empty')}</div>
+              <div style="font-size: 0.6rem; color: var(--text-muted); margin-top: 4px;">Klick zum Zuweisen</div>
             </div>`
         }).join('')
 
@@ -272,7 +267,8 @@ const { id } = Astro.params
       }).join('')
 
       container.querySelectorAll('.btn-delete-ams').forEach((btn: Element) => {
-        btn.addEventListener('click', async () => {
+        btn.addEventListener('click', async (e) => {
+          e.stopPropagation()
           const unitId = (btn as HTMLElement).dataset.unitId
           if (!(await (window as any).__fmConfirm(t('printers.confirmDeleteAms')))) return
           try {
@@ -281,24 +277,173 @@ const { id } = Astro.params
               headers: { 'X-CSRF-Token': getCsrfToken() },
               credentials: 'include',
             })
-            if (response.ok) {
-              loadPrinter()
-            } else {
-              await (window as any).__fmAlert(t('printers.failedDeleteAms'))
-            }
-          } catch {
-            await (window as any).__fmAlert(t('printers.failedDeleteAms'))
-          }
+            if (response.ok) { loadPrinter() }
+            else { await (window as any).__fmAlert(t('printers.failedDeleteAms')) }
+          } catch { await (window as any).__fmAlert(t('printers.failedDeleteAms')) }
+        })
+      })
+
+      container.querySelectorAll('.slot-card').forEach((card: Element) => {
+        card.addEventListener('click', () => {
+          const el = card as HTMLElement
+          const unitId = parseInt(el.dataset.unitId || '0')
+          const slotNo = parseInt(el.dataset.slotNo || '0')
+          const spoolId = el.dataset.spoolId ? parseInt(el.dataset.spoolId) : null
+          openSpoolModal(unitId, slotNo, spoolId)
         })
       })
     }
+
+    async function loadSpoolsAndFilaments() {
+      if (spoolsCache.length > 0 && filamentsCache.length > 0) return
+
+      const [spoolsRes, filamentsRes] = await Promise.all([
+        fetch('/api/v1/spools?page_size=200', { credentials: 'include' }),
+        fetch('/api/v1/filaments?page_size=200', { credentials: 'include' }),
+      ])
+
+      if (spoolsRes.ok) {
+        const data = await spoolsRes.json()
+        spoolsCache = data.items || []
+      }
+      if (filamentsRes.ok) {
+        const data = await filamentsRes.json()
+        filamentsCache = data.items || []
+      }
+    }
+
+    function getFilament(filamentId: number) {
+      return filamentsCache.find((f: any) => f.id === filamentId)
+    }
+
+    async function openSpoolModal(unitId: number, slotNo: number, currentSpoolId: number | null) {
+      stopRefresh()
+      pendingSlot = { unitId, slotNo, currentSpoolId }
+
+      const modal = document.getElementById('spool-modal')!
+      const title = document.getElementById('spool-modal-title')!
+      const list = document.getElementById('spool-list')!
+      const search = document.getElementById('spool-search') as HTMLInputElement
+      const unassignBtn = document.getElementById('spool-unassign')!
+
+      title.textContent = `Spule zuweisen – Slot ${slotNo}`
+      list.innerHTML = '<p style="color: var(--text-muted);">Laden...</p>'
+      search.value = ''
+      unassignBtn.style.display = currentSpoolId ? 'inline-block' : 'none'
+
+      modal.classList.add('open')
+
+      await loadSpoolsAndFilaments()
+      renderSpoolList('')
+    }
+
+    function renderSpoolList(query: string) {
+      const list = document.getElementById('spool-list')!
+      const q = query.toLowerCase()
+
+      const filtered = spoolsCache
+        .filter((s: any) => !s.deleted_at)
+        .map((s: any) => {
+          const fil = getFilament(s.filament_id)
+          return { ...s, filament: fil }
+        })
+        .filter((s: any) => {
+          if (!q) return true
+          const fil = s.filament
+          const searchStr = [
+            fil?.type, fil?.designation, fil?.manufacturer_color_name,
+            `#${s.id}`, s.lot_number,
+          ].filter(Boolean).join(' ').toLowerCase()
+          return searchStr.includes(q)
+        })
+
+      if (filtered.length === 0) {
+        list.innerHTML = '<p style="color: var(--text-muted);">Keine Spulen gefunden.</p>'
+        return
+      }
+
+      list.innerHTML = filtered.map((s: any) => {
+        const fil = s.filament
+        const type = fil?.type || '?'
+        const name = fil?.designation || ''
+        const colorName = fil?.manufacturer_color_name || ''
+        const weight = s.remaining_weight_g ? `${Math.round(s.remaining_weight_g)}g` : ''
+        const isActive = pendingSlot?.currentSpoolId === s.id
+
+        return `
+          <div class="spool-pick-item" data-spool-id="${s.id}" style="
+            display: flex; align-items: center; gap: 12px; padding: 10px 12px;
+            background: ${isActive ? 'var(--accent)' : 'var(--bg-soft)'};
+            color: ${isActive ? '#000' : 'inherit'};
+            border-radius: var(--radius-sm); cursor: pointer;
+            transition: background 0.15s;
+          " onmouseenter="if(!this.classList.contains('active'))this.style.background='var(--bg-card)'" onmouseleave="if(!this.classList.contains('active'))this.style.background='${isActive ? 'var(--accent)' : 'var(--bg-soft)'}'">
+            <div style="flex: 1;">
+              <div style="font-weight: 600; font-size: 0.9rem;">${type} – ${name || colorName}</div>
+              <div style="font-size: 0.75rem; color: ${isActive ? '#333' : 'var(--text-muted)'};">
+                Spool #${s.id} ${colorName ? '· ' + colorName : ''} ${weight ? '· ' + weight : ''}
+              </div>
+            </div>
+          </div>`
+      }).join('')
+
+      list.querySelectorAll('.spool-pick-item').forEach((item: Element) => {
+        item.addEventListener('click', () => {
+          const spoolId = parseInt((item as HTMLElement).dataset.spoolId || '0')
+          assignSpool(spoolId)
+        })
+      })
+    }
+
+    async function assignSpool(spoolId: number | null) {
+      if (!pendingSlot) return
+      const { unitId, slotNo } = pendingSlot
+
+      try {
+        const response = await fetch(`/api/v1/printers/${id}/ams-units/${unitId}/slots/${slotNo}/assign`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken() },
+          credentials: 'include',
+          body: JSON.stringify({ spool_id: spoolId }),
+        })
+
+        if (!response.ok) {
+          const data = await response.json()
+          await (window as any).__fmAlert(data?.detail?.message || 'Zuweisung fehlgeschlagen')
+          return
+        }
+
+        document.getElementById('spool-modal')!.classList.remove('open')
+        pendingSlot = null
+        await loadPrinter()
+        startRefresh()
+      } catch {
+        await (window as any).__fmAlert('Zuweisung fehlgeschlagen')
+      }
+    }
+
+    document.getElementById('spool-search')?.addEventListener('input', (e) => {
+      renderSpoolList((e.target as HTMLInputElement).value)
+    })
+
+    document.getElementById('spool-unassign')?.addEventListener('click', () => {
+      assignSpool(null)
+    })
+
+    document.getElementById('spool-modal-cancel')?.addEventListener('click', () => {
+      document.getElementById('spool-modal')!.classList.remove('open')
+      pendingSlot = null
+      startRefresh()
+    })
     
     document.getElementById('btn-add-ams')?.addEventListener('click', () => {
+      stopRefresh()
       document.getElementById('modal-container')!.classList.add('open')
     })
     
     document.getElementById('modal-cancel')?.addEventListener('click', () => {
       document.getElementById('modal-container')!.classList.remove('open')
+      startRefresh()
     })
     
     document.getElementById('modal-form')?.addEventListener('submit', async (e) => {
@@ -332,8 +477,9 @@ const { id } = Astro.params
           throw new Error(data.message || t('printers.failedAddAms'))
         }
         
-      document.getElementById('modal-container')!.classList.remove('open')
+        document.getElementById('modal-container')!.classList.remove('open')
         loadPrinter()
+        startRefresh()
       } catch (err: any) {
         error.textContent = err.message
         error.classList.remove('hidden')
@@ -343,6 +489,7 @@ const { id } = Astro.params
       }
     })
     
-    loadPrinter()
+    await loadPrinter()
+    startRefresh()
   </script>
 </Layout>
