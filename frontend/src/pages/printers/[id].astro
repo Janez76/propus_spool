@@ -192,6 +192,20 @@ const { id } = Astro.params
         } catch { await (window as any).__fmAlert(t('printers.failedUpdate')) }
       })
       
+      const maxAms = printer.driver_config?.max_ams_units
+      const addBtn = document.getElementById('btn-add-ams') as HTMLButtonElement
+      if (maxAms != null && printer.ams_units && printer.ams_units.length >= maxAms) {
+        addBtn.disabled = true
+        addBtn.title = `Maximale Anzahl AMS-Einheiten erreicht (${maxAms})`
+        addBtn.style.opacity = '0.5'
+        addBtn.style.cursor = 'not-allowed'
+      } else {
+        addBtn.disabled = false
+        addBtn.title = ''
+        addBtn.style.opacity = ''
+        addBtn.style.cursor = ''
+      }
+
       if (printer.ams_units && printer.ams_units.length > 0) {
         document.getElementById('ams-section')!.classList.remove('hidden')
         renderAmsUnits()

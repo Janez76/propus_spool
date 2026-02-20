@@ -1,5 +1,6 @@
 import importlib
 import logging
+import time
 from datetime import datetime
 from typing import Any, Callable
 
@@ -12,6 +13,8 @@ from app.plugins.base import BaseDriver
 from app.services.ams_slots_service import AmsSlotsService
 
 logger = logging.getLogger(__name__)
+
+MANUAL_RESEND_COOLDOWN = 60
 
 
 class EventEmitter:
@@ -33,6 +36,7 @@ class PluginManager:
     def __init__(self):
         self.drivers: dict[int, BaseDriver] = {}
         self.health_status: dict[int, dict[str, Any]] = {}
+        self._manual_resend_timestamps: dict[str, float] = {}
 
     def _create_event_handler(self, printer_id: int) -> Callable[[dict], None]:
         def handler(event: dict) -> None:
@@ -89,11 +93,14 @@ class PluginManager:
 
                 elif event_type == "ams_state":
                     ams_units = event.get("ams_units", [])
-                    await service.apply_ams_state(
+                    _events, manual_conflicts = await service.apply_ams_state(
                         printer_id=printer_id,
                         state=ams_units,
                         event_at=event_at,
                     )
+
+                    for conflict in manual_conflicts:
+                        await self._resend_manual_filament(conflict)
 
                 logger.info(f"Handled event {event_type} for printer {printer_id}")
 
@@ -171,6 +178,42 @@ class PluginManager:
     async def stop_all(self) -> None:
         for printer_id in list(self.drivers.keys()):
             await self.stop_printer(printer_id)
+
+    async def _resend_manual_filament(self, conflict: dict[str, Any]) -> None:
+        """Re-send set_filament for a manually assigned slot that the driver tried to overwrite."""
+        printer_id = conflict["printer_id"]
+        ams_unit_no = conflict["ams_unit_no"]
+        slot_no = conflict["slot_no"]
+        assignment = conflict["assignment"]
+        meta = assignment.meta or {}
+
+        cooldown_key = f"{printer_id}:{ams_unit_no}:{slot_no}"
+        now = time.monotonic()
+        last_sent = self._manual_resend_timestamps.get(cooldown_key, 0)
+        if now - last_sent < MANUAL_RESEND_COOLDOWN:
+            return
+
+        self._manual_resend_timestamps[cooldown_key] = now
+
+        filament_type = meta.get("material", "PLA")
+        color_hex = meta.get("color_hex", "FFFFFFFF")
+
+        try:
+            await self.send_command(printer_id, {
+                "command": "set_filament",
+                "ams_id": ams_unit_no,
+                "tray_id": slot_no - 1,
+                "filament_type": filament_type,
+                "color_hex": color_hex,
+                "nozzle_temp_min": 190,
+                "nozzle_temp_max": 230,
+            })
+            logger.info(
+                f"Re-sent manual filament for printer {printer_id} "
+                f"AMS {ams_unit_no} slot {slot_no}: {filament_type}"
+            )
+        except Exception as e:
+            logger.warning(f"Failed to resend manual filament: {e}")
 
     async def send_command(self, printer_id: int, command: dict[str, Any]) -> bool:
         driver = self.drivers.get(printer_id)

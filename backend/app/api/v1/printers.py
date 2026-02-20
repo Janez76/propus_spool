@@ -237,11 +237,29 @@ async def create_ams_unit(
     result = await db.execute(
         select(Printer).where(Printer.id == printer_id, Printer.deleted_at.is_(None))
     )
-    if not result.scalar_one_or_none():
+    printer = result.scalar_one_or_none()
+    if not printer:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail={"code": "not_found", "message": "Printer not found"},
         )
+
+    max_ams = (printer.driver_config or {}).get("max_ams_units")
+    if max_ams is not None:
+        count_result = await db.execute(
+            select(func.count()).select_from(PrinterAmsUnit).where(
+                PrinterAmsUnit.printer_id == printer_id
+            )
+        )
+        current_count = count_result.scalar() or 0
+        if current_count >= int(max_ams):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={
+                    "code": "max_ams_reached",
+                    "message": f"Maximale Anzahl AMS-Einheiten erreicht ({max_ams})",
+                },
+            )
 
     ams_unit = PrinterAmsUnit(
         printer_id=printer_id,

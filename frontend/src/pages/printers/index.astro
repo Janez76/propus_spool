@@ -39,6 +39,43 @@ import Layout from '../../layouts/Layout.astro'
       <form id="modal-form" style="display: flex; flex-direction: column; gap: 16px;">
         <input type="hidden" id="printer-id" />
         <div>
+          <label for="printer-preset" class="fm-label">Drucker-Vorlage</label>
+          <select id="printer-preset" class="fm-select">
+            <option value="">-- Benutzerdefiniert --</option>
+            <optgroup label="Bambu Lab">
+              <option value="bambu_x1c">Bambu Lab X1 Carbon</option>
+              <option value="bambu_x1e">Bambu Lab X1E</option>
+              <option value="bambu_p1s">Bambu Lab P1S</option>
+              <option value="bambu_p1p">Bambu Lab P1P</option>
+              <option value="bambu_a1">Bambu Lab A1</option>
+              <option value="bambu_a1mini">Bambu Lab A1 Mini</option>
+            </optgroup>
+            <optgroup label="Prusa">
+              <option value="prusa_mk4_mmu">Prusa MK4S + MMU3</option>
+              <option value="prusa_xl">Prusa XL (5-Tool)</option>
+            </optgroup>
+            <optgroup label="Snapmaker">
+              <option value="snapmaker_u1">Snapmaker Artisan / U1</option>
+              <option value="snapmaker_j1">Snapmaker J1 / J1s</option>
+            </optgroup>
+            <optgroup label="Creality">
+              <option value="creality_k1">Creality K1</option>
+              <option value="creality_k1max">Creality K1 Max</option>
+              <option value="creality_k2plus">Creality K2 Plus</option>
+              <option value="creality_ender3v3">Creality Ender-3 V3</option>
+            </optgroup>
+            <optgroup label="Voron">
+              <option value="voron_02">Voron 0.2</option>
+              <option value="voron_trident">Voron Trident</option>
+              <option value="voron_24">Voron 2.4</option>
+            </optgroup>
+            <optgroup label="AnkerMake">
+              <option value="anker_m5">AnkerMake M5</option>
+              <option value="anker_m5c">AnkerMake M5C</option>
+            </optgroup>
+          </select>
+        </div>
+        <div>
           <label for="printer-name" class="fm-label" data-i18n="printers.name">
             Name *
           </label>
@@ -114,6 +151,32 @@ import Layout from '../../layouts/Layout.astro'
     import { t, initI18n } from '../../lib/i18n'
     await initI18n()
 
+    const PRINTER_PRESETS: Record<string, {
+      name: string; manufacturer: string; model: string;
+      driver: string; max_ams_units: number; default_slots: number;
+    }> = {
+      bambu_x1c:     { name: "X1 Carbon",        manufacturer: "Bambu Lab",  model: "X1 Carbon",    driver: "bambu",   max_ams_units: 4, default_slots: 4 },
+      bambu_x1e:     { name: "X1E",              manufacturer: "Bambu Lab",  model: "X1E",          driver: "bambu",   max_ams_units: 4, default_slots: 4 },
+      bambu_p1s:     { name: "P1S",              manufacturer: "Bambu Lab",  model: "P1S",          driver: "bambu",   max_ams_units: 1, default_slots: 4 },
+      bambu_p1p:     { name: "P1P",              manufacturer: "Bambu Lab",  model: "P1P",          driver: "bambu",   max_ams_units: 1, default_slots: 4 },
+      bambu_a1:      { name: "A1",               manufacturer: "Bambu Lab",  model: "A1",           driver: "bambu",   max_ams_units: 1, default_slots: 4 },
+      bambu_a1mini:  { name: "A1 Mini",          manufacturer: "Bambu Lab",  model: "A1 Mini",      driver: "bambu",   max_ams_units: 1, default_slots: 4 },
+      prusa_mk4_mmu: { name: "MK4S + MMU3",      manufacturer: "Prusa",      model: "MK4S + MMU3",  driver: "klipper", max_ams_units: 1, default_slots: 5 },
+      prusa_xl:      { name: "XL (5-Tool)",      manufacturer: "Prusa",      model: "XL",           driver: "klipper", max_ams_units: 1, default_slots: 5 },
+      snapmaker_u1:  { name: "Artisan / U1",     manufacturer: "Snapmaker",  model: "Artisan",      driver: "klipper", max_ams_units: 1, default_slots: 4 },
+      snapmaker_j1:  { name: "J1 / J1s",         manufacturer: "Snapmaker",  model: "J1",           driver: "klipper", max_ams_units: 1, default_slots: 2 },
+      creality_k1:       { name: "K1",            manufacturer: "Creality",   model: "K1",           driver: "klipper", max_ams_units: 0, default_slots: 1 },
+      creality_k1max:    { name: "K1 Max",        manufacturer: "Creality",   model: "K1 Max",       driver: "klipper", max_ams_units: 0, default_slots: 1 },
+      creality_k2plus:   { name: "K2 Plus",       manufacturer: "Creality",   model: "K2 Plus",      driver: "klipper", max_ams_units: 0, default_slots: 1 },
+      creality_ender3v3: { name: "Ender-3 V3",    manufacturer: "Creality",   model: "Ender-3 V3",   driver: "klipper", max_ams_units: 0, default_slots: 1 },
+      voron_02:      { name: "Voron 0.2",        manufacturer: "Voron",      model: "0.2",          driver: "klipper", max_ams_units: 0, default_slots: 1 },
+      voron_trident: { name: "Voron Trident",    manufacturer: "Voron",      model: "Trident",      driver: "klipper", max_ams_units: 0, default_slots: 1 },
+      voron_24:      { name: "Voron 2.4",        manufacturer: "Voron",      model: "2.4",          driver: "klipper", max_ams_units: 0, default_slots: 1 },
+      anker_m5:      { name: "AnkerMake M5",     manufacturer: "AnkerMake",  model: "M5",           driver: "klipper", max_ams_units: 0, default_slots: 1 },
+      anker_m5c:     { name: "AnkerMake M5C",    manufacturer: "AnkerMake",  model: "M5C",          driver: "klipper", max_ams_units: 0, default_slots: 1 },
+    }
+
+    let selectedPreset: string | null = null
     let printers: any[] = []
     
     function getCsrfToken(): string {
@@ -267,21 +330,30 @@ import Layout from '../../layouts/Layout.astro'
     }
 
     function collectDriverConfig(driverKey: string): Record<string, any> | null {
+      let cfg: Record<string, any> | null = null
+
       if (driverKey === 'bambu') {
         const host = (document.getElementById('cfg-host') as HTMLInputElement)?.value || ''
         const code = (document.getElementById('cfg-access-code') as HTMLInputElement)?.value || ''
         if (!host || !code) return null
-        return { host, access_code: code }
+        cfg = { host, access_code: code }
       } else if (driverKey === 'klipper') {
         const host = (document.getElementById('cfg-host') as HTMLInputElement)?.value || ''
         if (!host) return null
         const apiKey = (document.getElementById('cfg-api-key') as HTMLInputElement)?.value || ''
         const slotsVal = (document.getElementById('cfg-slots') as HTMLInputElement)?.value || '1'
-        const cfg: Record<string, any> = { host, slots: parseInt(slotsVal) || 1 }
+        cfg = { host, slots: parseInt(slotsVal) || 1 }
         if (apiKey) cfg.api_key = apiKey
-        return cfg
       }
-      return null
+
+      if (cfg && selectedPreset && PRINTER_PRESETS[selectedPreset]) {
+        const preset = PRINTER_PRESETS[selectedPreset]
+        if (preset.max_ams_units > 0) {
+          cfg.max_ams_units = preset.max_ams_units
+        }
+      }
+
+      return cfg
     }
 
     function openModal(id: number | null = null, name: string = '', manufacturer: string = '', model: string = '', driver: string = 'dummy', serial: string = '', driverConfig: Record<string, any> = {}) {
@@ -293,6 +365,7 @@ import Layout from '../../layouts/Layout.astro'
       const modelInput = document.getElementById('printer-model') as HTMLInputElement
       const driverInput = document.getElementById('printer-driver') as HTMLSelectElement
       const serialInput = document.getElementById('printer-serial') as HTMLInputElement
+      const presetSelect = document.getElementById('printer-preset') as HTMLSelectElement
       const error = document.getElementById('modal-error')!
       
       title.textContent = id ? t('printers.editPrinter') : t('printers.addPrinter')
@@ -302,6 +375,8 @@ import Layout from '../../layouts/Layout.astro'
       modelInput.value = model
       driverInput.value = driver
       serialInput.value = serial
+      presetSelect.value = ''
+      selectedPreset = null
       currentDriverConfig = driverConfig || {}
       error.classList.add('hidden')
       
@@ -309,6 +384,28 @@ import Layout from '../../layouts/Layout.astro'
       container.classList.add('open')
       nameInput.focus()
     }
+
+    document.getElementById('printer-preset')?.addEventListener('change', (e) => {
+      const presetKey = (e.target as HTMLSelectElement).value
+      selectedPreset = presetKey || null
+
+      if (!presetKey) return
+
+      const preset = PRINTER_PRESETS[presetKey]
+      if (!preset) return
+
+      ;(document.getElementById('printer-name') as HTMLInputElement).value = preset.name
+      ;(document.getElementById('printer-manufacturer') as HTMLInputElement).value = preset.manufacturer
+      ;(document.getElementById('printer-model') as HTMLInputElement).value = preset.model
+      ;(document.getElementById('printer-driver') as HTMLSelectElement).value = preset.driver
+
+      currentDriverConfig = {}
+      if (preset.driver === 'klipper' && preset.default_slots > 1) {
+        currentDriverConfig.slots = preset.default_slots
+      }
+
+      renderDriverConfigFields(preset.driver)
+    })
 
     document.getElementById('printer-driver')?.addEventListener('change', (e) => {
       const val = (e.target as HTMLSelectElement).value

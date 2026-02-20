@@ -316,12 +316,25 @@ class AmsSlotsService:
         printer_id: int,
         state: list[dict[str, Any]],
         event_at: datetime,
-    ) -> list[PrinterSlotEvent]:
+    ) -> tuple[list[PrinterSlotEvent], list[dict[str, Any]]]:
         events = []
+        manual_conflicts: list[dict[str, Any]] = []
 
         for unit_data in state:
             ams_unit_no = unit_data.get("ams_unit_no")
+            slots_total = unit_data.get("slots_total", 4)
             slots = unit_data.get("slots", [])
+
+            ams_unit = await self.get_or_create_ams_unit(
+                printer_id, ams_unit_no, slots_total=slots_total
+            )
+            for i in range(ams_unit.slots_total):
+                await self.get_or_create_slot(
+                    printer_id=printer_id,
+                    slot_no=i + 1,
+                    is_ams_slot=True,
+                    ams_unit_id=ams_unit.id,
+                )
 
             for slot_data in slots:
                 slot_no = slot_data.get("slot_no")
@@ -342,6 +355,20 @@ class AmsSlotsService:
                         meta=slot_meta,
                     )
                     events.append(event)
+
+                    assignment_result = await self.db.execute(
+                        select(PrinterSlotAssignment).where(
+                            PrinterSlotAssignment.slot_id == slot.id
+                        )
+                    )
+                    assignment = assignment_result.scalar_one_or_none()
+                    if assignment and assignment.meta and assignment.meta.get("source") == "manual":
+                        manual_conflicts.append({
+                            "printer_id": printer_id,
+                            "ams_unit_no": ams_unit_no,
+                            "slot_no": slot_no,
+                            "assignment": assignment,
+                        })
                 else:
                     result = await self.apply_spool_removed(
                         printer_id=printer_id,
@@ -353,4 +380,4 @@ class AmsSlotsService:
                     if result:
                         events.append(result[1])
 
-        return events
+        return events, manual_conflicts
