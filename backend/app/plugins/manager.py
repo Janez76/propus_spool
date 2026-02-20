@@ -172,6 +172,19 @@ class PluginManager:
         for printer_id in list(self.drivers.keys()):
             await self.stop_printer(printer_id)
 
+    async def send_command(self, printer_id: int, command: dict[str, Any]) -> bool:
+        driver = self.drivers.get(printer_id)
+        if not driver:
+            logger.warning(f"No active driver for printer {printer_id}")
+            return False
+        try:
+            result = await driver.send_command(command)
+            logger.info(f"Sent command {command.get('command')} to printer {printer_id}: {result}")
+            return result
+        except Exception as e:
+            logger.error(f"Error sending command to printer {printer_id}: {e}")
+            return False
+
     def get_health(self) -> dict[int, dict[str, Any]]:
         for printer_id, driver in self.drivers.items():
             self.health_status[printer_id] = driver.health()

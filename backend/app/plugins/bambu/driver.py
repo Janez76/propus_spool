@@ -76,6 +76,59 @@ class Driver(BaseDriver):
         }
 
     # ------------------------------------------------------------------ #
+    #  Send commands to printer
+    # ------------------------------------------------------------------ #
+
+    FILAMENT_TYPE_MAP = {
+        "PLA": "GFL99", "PLA-CF": "GFL98", "PETG": "GFB99", "PETG-CF": "GFB98",
+        "ABS": "GFS99", "ASA": "GFN99", "TPU": "GFU99", "PA": "GFN98",
+        "PC": "GFC99", "PVA": "GFS98", "HIPS": "GFS97", "PET": "GFB97",
+    }
+
+    async def send_command(self, command: dict[str, Any]) -> bool:
+        if command.get("command") == "set_filament":
+            return self._send_filament_setting(command)
+        return False
+
+    def _send_filament_setting(self, cmd: dict[str, Any]) -> bool:
+        if not self._mqtt_client or not self._mqtt_client.is_connected():
+            logger.warning(f"Bambu MQTT not connected for printer {self.printer_id}, cannot send filament setting")
+            return False
+
+        serial = self.config["serial_number"]
+        topic = f"device/{serial}/request"
+
+        ams_id = cmd.get("ams_id", 0)
+        tray_id = cmd.get("tray_id", 0)
+        filament_type = cmd.get("filament_type", "PLA")
+        color_hex = cmd.get("color_hex", "FFFFFFFF")
+        nozzle_min = cmd.get("nozzle_temp_min", 190)
+        nozzle_max = cmd.get("nozzle_temp_max", 230)
+
+        base_type = filament_type.split(" ")[0].split("-")[0].upper()
+        tray_info_idx = self.FILAMENT_TYPE_MAP.get(filament_type.upper(), self.FILAMENT_TYPE_MAP.get(base_type, "GFL99"))
+
+        payload = json.dumps({
+            "print": {
+                "command": "ams_filament_setting",
+                "ams_id": ams_id,
+                "tray_id": tray_id,
+                "tray_info_idx": tray_info_idx,
+                "tray_color": color_hex.upper() if len(color_hex) == 8 else color_hex.upper() + "FF",
+                "nozzle_temp_min": nozzle_min,
+                "nozzle_temp_max": nozzle_max,
+                "tray_type": filament_type,
+                "setting_id": "",
+                "reason": "success",
+                "sequence_id": "0",
+            }
+        })
+
+        result = self._mqtt_client.publish(topic, payload)
+        logger.info(f"Sent ams_filament_setting to printer {self.printer_id}: AMS {ams_id} tray {tray_id} = {filament_type} ({color_hex})")
+        return result.rc == 0
+
+    # ------------------------------------------------------------------ #
     #  MQTT thread
     # ------------------------------------------------------------------ #
 

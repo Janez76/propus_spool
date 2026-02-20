@@ -167,20 +167,28 @@ class AmsSlotsService:
             assignment = PrinterSlotAssignment(slot_id=slot.id)
             self.db.add(assignment)
 
+        is_manual = assignment.meta and assignment.meta.get("source") == "manual"
+
         assignment.present = True
-        assignment.spool_id = spool.id if spool else None
-        assignment.rfid_uid = rfid_uid
-        assignment.external_id = external_id
-        assignment.inserted_at = event_at
-        assignment.updated_at = event_at
-        assignment.meta = meta
+        if is_manual:
+            if rfid_uid:
+                assignment.rfid_uid = rfid_uid
+            if external_id:
+                assignment.external_id = external_id
+        else:
+            assignment.spool_id = spool.id if spool else None
+            assignment.rfid_uid = rfid_uid
+            assignment.external_id = external_id
+            assignment.inserted_at = event_at
+            assignment.updated_at = event_at
+            assignment.meta = meta
 
         event = await self._create_slot_event(
             printer_id=printer_id,
             slot_id=slot.id,
             event_type="spool_inserted",
             event_at=event_at,
-            spool_id=spool.id if spool else None,
+            spool_id=assignment.spool_id,
             rfid_uid=rfid_uid,
             external_id=external_id,
             meta=meta,
@@ -230,12 +238,14 @@ class AmsSlotsService:
         assignment = result.scalar_one_or_none()
 
         if assignment:
-            assignment.present = False
-            assignment.spool_id = None
-            assignment.rfid_uid = None
-            assignment.external_id = None
-            assignment.inserted_at = None
-            assignment.updated_at = event_at
+            is_manual = assignment.meta and assignment.meta.get("source") == "manual"
+            if not is_manual:
+                assignment.present = False
+                assignment.spool_id = None
+                assignment.rfid_uid = None
+                assignment.external_id = None
+                assignment.inserted_at = None
+                assignment.updated_at = event_at
 
         event = await self._create_slot_event(
             printer_id=printer_id,

@@ -33,3 +33,7 @@ class BaseDriver(ABC):
 
     def validate_config(self) -> None:
         pass
+
+    async def send_command(self, command: dict[str, Any]) -> bool:
+        """Send a command to the printer. Returns True if sent successfully."""
+        return False
