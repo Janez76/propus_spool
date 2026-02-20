@@ -218,7 +218,7 @@ BUILTIN_PLUGINS = [
         "name": "Spoolman Import",
         "version": "1.0.0",
         "description": "Import filaments, spools, manufacturers and locations from a Spoolman instance",
-        "author": "FilaMan",
+        "author": "Propus Spool",
         "plugin_type": "import",
         "page_url": "/admin/system/spoolman-import",
     },

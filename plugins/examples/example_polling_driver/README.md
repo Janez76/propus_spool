@@ -1,6 +1,6 @@
 # Example Polling Driver
 
-Beispiel-Plugin fuer FilaMan, das einen einfachen HTTP-Polling-Treiber demonstriert.
+Beispiel-Plugin fuer Propus Spool, das einen einfachen HTTP-Polling-Treiber demonstriert.
 
 ## Funktionsweise
 

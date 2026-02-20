@@ -364,7 +364,7 @@ class SpoolmanImportService:
     async def _import_locations(
         self, locations: list[dict[str, Any]], result: ImportResult
     ) -> tuple[dict[Any, int], dict[str, int]]:
-        """Locations importieren. Gibt (Spoolman-ID -> FilaMan-ID, Name -> FilaMan-ID) zurueck."""
+        """Locations importieren. Gibt (Spoolman-ID -> Propus Spool-ID, Name -> Propus Spool-ID) zurueck."""
         loc_map: dict[Any, int] = {}
         name_map: dict[str, int] = {}
 
@@ -430,7 +430,7 @@ class SpoolmanImportService:
     async def _import_manufacturers(
         self, vendors: list[dict[str, Any]], result: ImportResult
     ) -> dict[int, int]:
-        """Vendors als Manufacturers importieren. Gibt Spoolman-Vendor-ID -> FilaMan-ID."""
+        """Vendors als Manufacturers importieren. Gibt Spoolman-Vendor-ID -> Propus Spool-ID."""
         mfr_map: dict[int, int] = {}
 
         for vendor in vendors:
@@ -485,7 +485,7 @@ class SpoolmanImportService:
     async def _import_colors(
         self, colors: list[dict[str, str]], result: ImportResult
     ) -> dict[str, int]:
-        """Farben importieren. Gibt hex_code (lowercase) -> FilaMan-Color-ID."""
+        """Farben importieren. Gibt hex_code (lowercase) -> Propus Spool-Color-ID."""
         color_map: dict[str, int] = {}
 
         # Existierende Farben laden
@@ -523,7 +523,7 @@ class SpoolmanImportService:
         color_map: dict[str, int],
         result: ImportResult,
     ) -> dict[int, int]:
-        """Filamente importieren. Gibt Spoolman-Filament-ID -> FilaMan-ID."""
+        """Filamente importieren. Gibt Spoolman-Filament-ID -> Propus Spool-ID."""
         fil_map: dict[int, int] = {}
 
         for fil_data in filaments:
@@ -550,17 +550,17 @@ class SpoolmanImportService:
             vendor = fil_data.get("vendor")
             # Safety: Ensure vendor is a dict
             vendor_id = vendor.get("id") if vendor and isinstance(vendor, dict) else None
-            filaman_mfr_id = manufacturer_map.get(vendor_id) if vendor_id else None
+            local_mfr_id = manufacturer_map.get(vendor_id) if vendor_id else None
 
-            if not filaman_mfr_id:
+            if not local_mfr_id:
                 # Unbekannter Hersteller - "Unknown" anlegen oder finden
-                filaman_mfr_id = await self._get_or_create_unknown_manufacturer()
+                local_mfr_id = await self._get_or_create_unknown_manufacturer()
                 result.warnings.append(
                     f"Filament '{fil_data.get('name', '?')}' (ID {spoolman_id}): "
                     "Kein Hersteller zugeordnet, verwende 'Unknown'"
                 )
 
-            # Mapping: Spoolman -> FilaMan Felder
+            # Mapping: Spoolman -> Propus Spool Felder
             material = self._clean(fil_data.get("material")) or "PLA"
             name = self._clean(fil_data.get("name")) or ""
             designation = name if name else f"{material} (Spoolman #{spoolman_id})"
@@ -627,7 +627,7 @@ class SpoolmanImportService:
 
             try:
                 new_fil = Filament(
-                    manufacturer_id=filaman_mfr_id,
+                    manufacturer_id=local_mfr_id,
                     designation=designation,
                     type=material,
                     diameter_mm=diameter,
@@ -720,9 +720,9 @@ class SpoolmanImportService:
             # Filament auflösen
             fil = spool_data.get("filament")
             fil_spoolman_id = fil.get("id") if fil and isinstance(fil, dict) else None
-            filaman_fil_id = filament_map.get(fil_spoolman_id) if fil_spoolman_id else None
+            local_fil_id = filament_map.get(fil_spoolman_id) if fil_spoolman_id else None
 
-            if not filaman_fil_id:
+            if not local_fil_id:
                 result.errors.append(
                     f"Spule Spoolman #{spoolman_id}: "
                     f"Filament (Spoolman #{fil_spoolman_id}) nicht gefunden, uebersprungen"
@@ -861,7 +861,7 @@ class SpoolmanImportService:
                 # Nested transaction damit ein Fehler nicht den ganzen Import abbricht
                 async with self.db.begin_nested():
                     new_spool = Spool(
-                        filament_id=filaman_fil_id,
+                        filament_id=local_fil_id,
                         status_id=status_id,
                         lot_number=self._clean(spool_data.get("lot_nr")),
                         rfid_uid=rfid_uid,

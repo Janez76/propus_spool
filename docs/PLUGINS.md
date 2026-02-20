@@ -1,8 +1,8 @@
-# FilaMan Plugin-System
+# Propus Spool Plugin-System
 
 ## Uebersicht
 
-FilaMan unterstuetzt Plugins zur Erweiterung der Drucker-Anbindung. Plugins werden als **ZIP-Dateien** ueber den Admin-Bereich (System > Plugins) installiert. Jedes Plugin stellt einen Drucker-Treiber bereit, der Events (z.B. Spulenwechsel) an den Core emittiert.
+Propus Spool unterstuetzt Plugins zur Erweiterung der Drucker-Anbindung. Plugins werden als **ZIP-Dateien** ueber den Admin-Bereich (System > Plugins) installiert. Jedes Plugin stellt einen Drucker-Treiber bereit, der Events (z.B. Spulenwechsel) an den Core emittiert.
 
 ---
 
@@ -30,7 +30,7 @@ Das Manifest beschreibt das Plugin und wird bei der Installation validiert.
   "version": "1.0.0",
   "description": "Beschreibung des Plugins",
   "author": "Autor Name",
-  "min_filaman_version": "1.0.0",
+  "min_app_version": "1.0.0",
   "driver_key": "mein_plugin",
   "config_schema": {
     "host": {
@@ -69,7 +69,7 @@ Das Manifest beschreibt das Plugin und wird bei der Installation validiert.
 
 | Feld | Typ | Beschreibung |
 |------|-----|-------------|
-| `min_filaman_version` | string | Mindestversion von FilaMan |
+| `min_app_version` | string | Mindestversion von Propus Spool |
 | `config_schema` | object | Schema fuer die Treiber-Konfiguration |
 | `homepage` | string | URL zur Plugin-Homepage |
 | `license` | string | Lizenz (z.B. `MIT`) |

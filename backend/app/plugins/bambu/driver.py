@@ -142,7 +142,7 @@ class Driver(BaseDriver):
             try:
                 client = mqtt.Client(
                     callback_api_version=mqtt.CallbackAPIVersion.VERSION2,
-                    client_id=f"filaman-{self.printer_id}",
+                    client_id=f"propus-{self.printer_id}",
                     protocol=mqtt.MQTTv311,
                 )
                 client.username_pw_set(MQTT_USERNAME, access_code)
@@ -218,12 +218,12 @@ class Driver(BaseDriver):
             logger.error(f"Failed to emit ams_state for printer {self.printer_id}: {e}")
 
     # ------------------------------------------------------------------ #
-    #  Parse Bambu AMS data into FilaMan event format
+    #  Parse Bambu AMS data into Propus Spool event format
     # ------------------------------------------------------------------ #
 
     @staticmethod
     def _parse_ams_state(ams_units_raw: list[dict]) -> list[dict[str, Any]]:
-        """Convert Bambu Lab MQTT AMS payload to FilaMan ams_state format."""
+        """Convert Bambu Lab MQTT AMS payload to Propus Spool ams_state format."""
         result: list[dict[str, Any]] = []
 
         for unit in ams_units_raw:

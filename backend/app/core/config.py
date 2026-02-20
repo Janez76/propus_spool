@@ -16,14 +16,14 @@ class Settings(BaseSettings):
         case_sensitive=False,
     )
 
-    app_name: str = "FilaMan"
+    app_name: str = "Propus Spool"
     debug: bool = False
 
     log_level: str = "INFO"
     log_format: str = "json"
 
     # Default to a file in the project root if not specified in env
-    database_url: str = f"sqlite+aiosqlite:///{PROJECT_ROOT}/filaman.db"
+    database_url: str = f"sqlite+aiosqlite:///{PROJECT_ROOT}/propus_spool.db"
 
     @field_validator("database_url", mode="before")
     @classmethod

@@ -40,7 +40,7 @@ def run_migrations() -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("Starting FilaMan backend...")
+    logger.info("Starting Propus Spool backend...")
     logger.info(f"Using database URL: {settings.database_url}")
 
     # Skip migrations in app context if configured (e.g. in Docker where entrypoint handles it)
@@ -59,11 +59,11 @@ async def lifespan(app: FastAPI):
     async with async_session_maker() as db:
         await run_all_seeds(db)
     await plugin_manager.start_all()
-    logger.info("FilaMan backend started")
+    logger.info("Propus Spool backend started")
     yield
-    logger.info("Shutting down FilaMan backend...")
+    logger.info("Shutting down Propus Spool backend...")
     await plugin_manager.stop_all()
-    logger.info("FilaMan backend stopped")
+    logger.info("Propus Spool backend stopped")
 
 
 app = FastAPI(

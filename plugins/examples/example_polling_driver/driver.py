@@ -1,5 +1,5 @@
 """
-Example Polling Driver Plugin fuer FilaMan.
+Example Polling Driver Plugin fuer Propus Spool.
 
 Dieses Plugin demonstriert einen einfachen HTTP-Polling-Treiber,
 der periodisch einen simulierten Drucker-Endpoint abfragt und

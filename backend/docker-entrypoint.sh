@@ -24,8 +24,8 @@ echo "Checking for database migrations..."
 chmod +x /app/backup_db.sh
 
 # Only backup if the database file exists and has size > 0
-# Path adjusted to /app/data/filaman.db as requested
-if [ -f "/app/data/filaman.db" ] && [ -s "/app/data/filaman.db" ]; then
+# Path adjusted to /app/data/propus_spool.db as requested
+if [ -f "/app/data/propus_spool.db" ] && [ -s "/app/data/propus_spool.db" ]; then
     echo "Existing database found, creating backup..."
     /app/backup_db.sh
 fi
@@ -35,8 +35,8 @@ alembic upgrade head
 echo "Database migrations complete."
 
 # Cron already installed via Dockerfile
-echo "0 2 * * * /app/backup_db.sh >> /var/log/backup.log 2>&1" > /etc/cron.d/filaman-backup
-chmod 0644 /etc/cron.d/filaman-backup
+echo "0 2 * * * /app/backup_db.sh >> /var/log/backup.log 2>&1" > /etc/cron.d/propus-spool-backup
+chmod 0644 /etc/cron.d/propus-spool-backup
 
 # Start cron
 cron

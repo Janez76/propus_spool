@@ -1,1 +1,1 @@
-# Example Polling Driver Plugin for FilaMan
+# Example Polling Driver Plugin for Propus Spool

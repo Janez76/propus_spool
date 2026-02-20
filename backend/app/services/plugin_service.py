@@ -84,7 +84,7 @@ class PluginInstallService:
         self._validate_zip(zip_data)
 
         # 3. In temp-Verzeichnis entpacken
-        with tempfile.TemporaryDirectory(prefix="filaman_plugin_") as tmpdir:
+        with tempfile.TemporaryDirectory(prefix="propus_plugin_") as tmpdir:
             plugin_dir = self._extract_zip(zip_data, tmpdir)
 
             # 4. Manifest lesen (frueher, um plugin_type zu kennen)

@@ -1,12 +1,12 @@
 version: '3.8'
 
 services:
-  filaman:
+  propus-spool:
     build:
       context: .
       dockerfile: Dockerfile
-    image: filaman-system
-    container_name: filaman-system-app
+    image: propus-spool
+    container_name: propus-spool-app
     ports:
       - "8000:8000"
     env_file:
@@ -15,5 +15,4 @@ services:
 
 networks:
   default:
-    name: filaman-network
-
+    name: propus-spool-network

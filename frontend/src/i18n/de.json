@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "FilaMan",
+    "name": "Propus Spool",
     "subtitle": "Filament-Verwaltung",
     "loading": "Laden..."
   },
@@ -71,8 +71,8 @@
   },
 
   "login": {
-    "title": "Anmeldung - FilaMan",
-    "heading": "FilaMan",
+    "title": "Anmeldung - Propus Spool",
+    "heading": "Propus Spool",
     "subtitle": "Filament-Verwaltungssystem",
     "email": "E-Mail",
     "password": "Passwort",

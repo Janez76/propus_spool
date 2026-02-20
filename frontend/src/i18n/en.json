@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "FilaMan",
+    "name": "Propus Spool",
     "subtitle": "Filament Management",
     "loading": "Loading..."
   },
@@ -70,8 +70,8 @@
     "deviceUnreachable": "Device unreachable. Please check the network."
   },
   "login": {
-    "title": "Login - FilaMan",
-    "heading": "FilaMan",
+    "title": "Login - Propus Spool",
+    "heading": "Propus Spool",
     "subtitle": "Filament Management System",
     "email": "Email",
     "password": "Password",

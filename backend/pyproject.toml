@@ -1,5 +1,5 @@
 [project]
-name = "filaman-backend"
+name = "propus-spool-backend"
 version = "0.1.0"
 description = "Filament Management System for 3D Printing"
 readme = "README.md"
