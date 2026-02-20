@@ -174,14 +174,21 @@ class AmsSlotsService:
 
         is_manual = assignment.meta and assignment.meta.get("source") == "manual"
 
+        incoming_spool_id = spool.id if spool else None
+        current_ext = assignment.external_id or ""
+        spool_changed = (
+            (external_id and external_id != current_ext)
+            or (incoming_spool_id is not None and incoming_spool_id != assignment.spool_id)
+        )
+
         assignment.present = True
-        if is_manual:
+        if is_manual and not spool_changed:
             if rfid_uid:
                 assignment.rfid_uid = rfid_uid
             if external_id:
                 assignment.external_id = external_id
         else:
-            assignment.spool_id = spool.id if spool else None
+            assignment.spool_id = incoming_spool_id
             assignment.rfid_uid = rfid_uid
             assignment.external_id = external_id
             assignment.inserted_at = event_at
