@@ -55,13 +55,18 @@ class AmsSlotsService:
         ams_unit_id: int | None = None,
         name: str | None = None,
     ) -> PrinterSlot:
+        conditions = [
+            PrinterSlot.printer_id == printer_id,
+            PrinterSlot.slot_no == slot_no,
+        ]
+        if ams_unit_id is not None:
+            conditions.append(PrinterSlot.ams_unit_id == ams_unit_id)
+        else:
+            conditions.append(PrinterSlot.ams_unit_id.is_(None))
+        conditions.append(PrinterSlot.is_ams_slot == is_ams_slot)
+
         result = await self.db.execute(
-            select(PrinterSlot).where(
-                PrinterSlot.printer_id == printer_id,
-                PrinterSlot.is_ams_slot == is_ams_slot,
-                PrinterSlot.ams_unit_id == ams_unit_id if is_ams_slot else None,
-                PrinterSlot.slot_no == slot_no,
-            )
+            select(PrinterSlot).where(*conditions)
         )
         slot = result.scalar_one_or_none()
 

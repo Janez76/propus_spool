@@ -21,7 +21,7 @@ const { id } = Astro.params
   
   <div id="ams-section" class="hidden" style="margin-top: 32px;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-      <h2 style="font-size: 1.3rem; font-weight: 600;" data-i18n="printers.amsUnits">AMS Units</h2>
+      <h2 id="ams-section-title" style="font-size: 1.3rem; font-weight: 600;" data-i18n="printers.amsUnits">AMS Units</h2>
       <button
         id="btn-add-ams"
         class="fm-btn fm-btn-primary"
@@ -126,6 +126,7 @@ const { id } = Astro.params
     }
     
     function renderPrinter() {
+      const isKlipper = printer.driver_key === 'klipper'
       document.getElementById('printer-content')!.innerHTML = `
         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px;">
           <div>
@@ -160,7 +161,7 @@ const { id } = Astro.params
             </div>
           </div>
           <div class="fm-card">
-            <div style="font-size: 0.85rem; color: var(--text-muted);">${t('printers.amsUnits')}</div>
+            <div style="font-size: 0.85rem; color: var(--text-muted);">${isKlipper ? t('printers.spoolHolders') || 'Spulenhalter' : t('printers.amsUnits')}</div>
             <div style="font-size: 1.15rem; font-weight: 600; margin-top: 4px;">${printer.ams_units?.length || 0}</div>
           </div>
         </div>
@@ -192,11 +193,20 @@ const { id } = Astro.params
         } catch { await (window as any).__fmAlert(t('printers.failedUpdate')) }
       })
       
-      const maxAms = printer.driver_config?.max_ams_units
+      const sectionTitle = document.getElementById('ams-section-title')!
       const addBtn = document.getElementById('btn-add-ams') as HTMLButtonElement
+
+      if (isKlipper) {
+        sectionTitle.textContent = 'Spulenhalter'
+        addBtn.textContent = 'Spulenhalter hinzufügen'
+      }
+
+      const maxAms = printer.driver_config?.max_ams_units
       if (maxAms != null && printer.ams_units && printer.ams_units.length >= maxAms) {
         addBtn.disabled = true
-        addBtn.title = `Maximale Anzahl AMS-Einheiten erreicht (${maxAms})`
+        addBtn.title = isKlipper
+          ? `Maximale Anzahl Spulenhalter erreicht (${maxAms})`
+          : `Maximale Anzahl AMS-Einheiten erreicht (${maxAms})`
         addBtn.style.opacity = '0.5'
         addBtn.style.cursor = 'not-allowed'
       } else {
@@ -211,11 +221,15 @@ const { id } = Astro.params
         renderAmsUnits()
       } else {
         document.getElementById('ams-section')!.classList.remove('hidden')
-        document.getElementById('ams-units')!.innerHTML = `<p style="color: var(--text-muted);">Keine AMS-Einheiten. Füge eine hinzu oder warte auf die automatische Erkennung.</p>`
+        const noUnitsText = isKlipper
+          ? 'Kein Spulenhalter. Füge einen hinzu oder warte auf die automatische Erkennung.'
+          : 'Keine AMS-Einheiten. Füge eine hinzu oder warte auf die automatische Erkennung.'
+        document.getElementById('ams-units')!.innerHTML = `<p style="color: var(--text-muted);">${noUnitsText}</p>`
       }
     }
     
     function renderAmsUnits() {
+      const isKlipper = printer.driver_key === 'klipper'
       const container = document.getElementById('ams-units')!
       const slots: any[] = printer.slots || []
 
@@ -250,7 +264,7 @@ const { id } = Astro.params
             const spoolLabel = spoolId ? `<div style="font-size:0.65rem;color:var(--accent-2);margin-top:2px;">Spool #${spoolId}</div>` : ''
             return `
               <div class="slot-card" ${clickAttr} style="padding: 12px; background: var(--bg-soft); border-radius: var(--radius-sm); text-align: center; border: 1px solid ${colorCode ? '#' + colorCode : 'var(--accent-2)'}; cursor: pointer; transition: transform 0.1s;" onmouseenter="this.style.transform='scale(1.03)'" onmouseleave="this.style.transform='scale(1)'">
-                <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;">${t('printers.slotLabel', { no: slotNo })}</div>
+                <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;">${isKlipper ? `Spule ${slotNo}` : t('printers.slotLabel', { no: slotNo })}</div>
                 <div style="font-size: 0.9rem; font-weight: 600; margin-bottom: 2px;">${colorSwatch}${displayName}</div>
                 ${subInfo ? `<div style="font-size: 0.7rem; color: var(--text-muted);">${subInfo}</div>` : ''}
                 ${statsLine ? `<div style="font-size: 0.75rem; color: var(--text-muted);">${statsLine}</div>` : ''}
@@ -260,7 +274,7 @@ const { id } = Astro.params
 
           return `
             <div class="slot-card" ${clickAttr} style="padding: 12px; background: var(--bg-soft); border-radius: var(--radius-sm); text-align: center; cursor: pointer; border: 1px dashed rgba(255,255,255,0.1); transition: transform 0.1s;" onmouseenter="this.style.transform='scale(1.03)'" onmouseleave="this.style.transform='scale(1)'">
-              <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;">${t('printers.slotLabel', { no: slotNo })}</div>
+              <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;">${isKlipper ? `Spule ${slotNo}` : t('printers.slotLabel', { no: slotNo })}</div>
               <div style="font-size: 0.85rem; font-weight: 500; color: var(--text-muted);">${t('common.empty')}</div>
               <div style="font-size: 0.6rem; color: var(--text-muted); margin-top: 4px;">Klick zum Zuweisen</div>
             </div>`
@@ -270,8 +284,8 @@ const { id } = Astro.params
           <div class="fm-card">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
               <div>
-                <h3 style="font-weight: 600;">${unit.name || t('printers.amsUnitLabel', { no: unit.ams_unit_no })}</h3>
-                <p style="font-size: 0.85rem; color: var(--text-muted);">${t('printers.unitLabel', { no: unit.ams_unit_no })} · ${t('printers.slots', { count: unit.slots_total })}</p>
+                <h3 style="font-weight: 600;">${unit.name || (isKlipper ? `Spulenhalter` : t('printers.amsUnitLabel', { no: unit.ams_unit_no }))}</h3>
+                <p style="font-size: 0.85rem; color: var(--text-muted);">${isKlipper ? '' : t('printers.unitLabel', { no: unit.ams_unit_no }) + ' · '}${unit.slots_total} ${isKlipper ? 'Spulen' : t('printers.slots', { count: unit.slots_total })}</p>
               </div>
               <div style="display: flex; gap: 8px; align-items: center;">
                 <span style="padding: 2px 8px; font-size: 0.75rem; border-radius: 999px; background: var(--bg-soft); ${unit.is_active ? 'color: var(--accent-2);' : 'color: var(--error-text);'}">
@@ -282,7 +296,7 @@ const { id } = Astro.params
                 </button>
               </div>
             </div>
-            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px;">
               ${slotCards}
             </div>
           </div>`
@@ -348,7 +362,8 @@ const { id } = Astro.params
       const search = document.getElementById('spool-search') as HTMLInputElement
       const unassignBtn = document.getElementById('spool-unassign')!
 
-      title.textContent = `Spule zuweisen – Slot ${slotNo}`
+      const isKlipperPrinter = printer.driver_key === 'klipper'
+      title.textContent = isKlipperPrinter ? `Spule zuweisen – Spule ${slotNo}` : `Spule zuweisen – Slot ${slotNo}`
       list.innerHTML = '<p style="color: var(--text-muted);">Laden...</p>'
       search.value = ''
       unassignBtn.style.display = currentSpoolId ? 'inline-block' : 'none'

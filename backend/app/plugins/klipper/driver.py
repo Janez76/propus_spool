@@ -153,7 +153,7 @@ class Driver(BaseDriver):
             if spool_id and spool_id > 0:
                 self.emit({
                     "event_type": "spool_inserted",
-                    "slot": {"slot_no": slot_no},
+                    "slot": {"slot_no": slot_no, "ams_unit_no": 0},
                     "identifiers": {"external_id": f"spoolman:{spool_id}"},
                 })
                 logger.info(
@@ -163,7 +163,7 @@ class Driver(BaseDriver):
             else:
                 self.emit({
                     "event_type": "spool_removed",
-                    "slot": {"slot_no": slot_no},
+                    "slot": {"slot_no": slot_no, "ams_unit_no": 0},
                 })
                 logger.info(
                     f"Klipper printer {self.printer_id} slot {slot_no}: empty"
