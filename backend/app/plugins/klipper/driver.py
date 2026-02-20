@@ -1,4 +1,8 @@
-"""Klipper/Moonraker printer driver – polls printer status via HTTP API."""
+"""Klipper/Moonraker printer driver – polls printer status via HTTP API.
+
+Supports multi-spool setups by reading Klipper save_variables (tN__spool_id)
+which map tool numbers to Spoolman spool IDs.
+"""
 
 import asyncio
 import logging
@@ -26,6 +30,7 @@ class Driver(BaseDriver):
         self._task: asyncio.Task | None = None
         self._printer_state: str = "unknown"
         self._initial_state_sent = False
+        self._last_slot_spools: dict[int, int | None] = {}
 
     def validate_config(self) -> None:
         host = self.config.get("host")
@@ -35,6 +40,7 @@ class Driver(BaseDriver):
     async def start(self) -> None:
         self._running = True
         self._initial_state_sent = False
+        self._last_slot_spools = {}
         self._task = asyncio.create_task(self._poll_loop())
         logger.info(f"Klipper driver started for printer {self.printer_id}")
 
@@ -85,6 +91,7 @@ class Driver(BaseDriver):
             headers["X-Api-Key"] = api_key
 
         self._emit_initial_state()
+        slots_count = int(self.config.get("slots", 1))
 
         while self._running:
             try:
@@ -93,13 +100,16 @@ class Driver(BaseDriver):
                     if info:
                         self._printer_state = info.get("state", "unknown")
 
-                    spoolman = await self._get_spoolman_id(client, host)
-                    if spoolman is not None:
-                        self.emit({
-                            "event_type": "spool_inserted",
-                            "slot": {"slot_no": 1},
-                            "identifiers": {"external_id": f"spoolman:{spoolman}"},
-                        })
+                    if slots_count > 1:
+                        await self._poll_multi_spool(client, host, slots_count)
+                    else:
+                        spoolman = await self._get_spoolman_id(client, host)
+                        if spoolman is not None:
+                            self.emit({
+                                "event_type": "spool_inserted",
+                                "slot": {"slot_no": 1},
+                                "identifiers": {"external_id": f"spoolman:{spoolman}"},
+                            })
 
             except httpx.RequestError as e:
                 logger.debug(f"Klipper poll error for printer {self.printer_id}: {e}")
@@ -111,6 +121,68 @@ class Driver(BaseDriver):
                 await asyncio.sleep(POLL_INTERVAL)
             except asyncio.CancelledError:
                 break
+
+    async def _poll_multi_spool(
+        self, client: httpx.AsyncClient, host: str, slots_count: int
+    ) -> None:
+        """Read tN__spool_id variables from Klipper save_variables for each slot."""
+        variables = await self._get_save_variables(client, host)
+        if variables is None:
+            return
+
+        for tool_idx in range(slots_count):
+            slot_no = tool_idx + 1
+            key = f"t{tool_idx}__spool_id"
+            raw = variables.get(key)
+
+            spool_id: int | None = None
+            if raw not in (None, "", 0):
+                try:
+                    spool_id = int(raw)
+                except (ValueError, TypeError):
+                    spool_id = None
+
+            prev = self._last_slot_spools.get(slot_no)
+            if spool_id == prev:
+                continue
+            self._last_slot_spools[slot_no] = spool_id
+
+            if spool_id and spool_id > 0:
+                self.emit({
+                    "event_type": "spool_inserted",
+                    "slot": {"slot_no": slot_no},
+                    "identifiers": {"external_id": f"spoolman:{spool_id}"},
+                })
+                logger.info(
+                    f"Klipper printer {self.printer_id} slot {slot_no}: "
+                    f"spool spoolman:{spool_id}"
+                )
+            else:
+                self.emit({
+                    "event_type": "spool_removed",
+                    "slot": {"slot_no": slot_no},
+                })
+                logger.info(
+                    f"Klipper printer {self.printer_id} slot {slot_no}: empty"
+                )
+
+    async def _get_save_variables(
+        self, client: httpx.AsyncClient, host: str
+    ) -> dict[str, Any] | None:
+        """Query Klipper save_variables via Moonraker objects API."""
+        try:
+            resp = await client.get(f"{host}/printer/objects/query?save_variables")
+            if resp.status_code == 200:
+                return (
+                    resp.json()
+                    .get("result", {})
+                    .get("status", {})
+                    .get("save_variables", {})
+                    .get("variables", {})
+                )
+        except Exception:
+            pass
+        return None
 
     async def _get_printer_info(self, client: httpx.AsyncClient, host: str) -> dict | None:
         try:
