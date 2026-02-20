@@ -209,12 +209,12 @@ interface PaginatedResponse<T> {
     .spool-chart-wrap {
       display: flex;
       align-items: center;
-      gap: 20px;
+      gap: 16px;
     }
     .spool-donut {
       position: relative;
-      width: 140px;
-      height: 140px;
+      width: 110px;
+      height: 110px;
       flex-shrink: 0;
     }
     .spool-donut svg { width: 100%; height: 100%; }
@@ -222,12 +222,8 @@ interface PaginatedResponse<T> {
       transition: opacity 0.2s ease, filter 0.2s ease;
       cursor: pointer;
     }
-    .spool-donut-segment:hover {
-      filter: brightness(1.25);
-    }
-    .spool-donut.has-hover .spool-donut-segment:not(.active) {
-      opacity: 0.35;
-    }
+    .spool-donut-segment:hover { filter: brightness(1.25); }
+    .spool-donut.has-hover .spool-donut-segment:not(.active) { opacity: 0.3; }
     .spool-donut-center {
       position: absolute;
       inset: 0;
@@ -238,78 +234,57 @@ interface PaginatedResponse<T> {
       pointer-events: none;
     }
     .spool-donut-total {
-      font-size: 1.5rem;
+      font-size: 1.2rem;
       font-weight: 800;
       line-height: 1;
-      transition: transform 0.2s ease;
+      transition: color 0.15s ease;
     }
     .spool-donut-sublabel {
-      font-size: 0.65rem;
+      font-size: 0.55rem;
       color: var(--text-muted);
-      margin-top: 2px;
+      margin-top: 1px;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.04em;
     }
     .spool-legend {
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 2px;
       flex: 1;
       min-width: 0;
     }
     .spool-legend-item {
       display: flex;
       align-items: center;
-      gap: 10px;
-      padding: 6px 10px;
+      gap: 8px;
+      padding: 4px 6px;
       border-radius: var(--radius-sm);
       cursor: pointer;
-      transition: background 0.15s ease, transform 0.15s ease;
-      position: relative;
+      transition: background 0.15s ease;
     }
-    .spool-legend-item:hover {
-      background: var(--bg-soft);
-      transform: translateX(2px);
-    }
-    .spool-legend-item.active {
-      background: var(--bg-soft);
-    }
-    .spool-legend-icon {
-      width: 28px;
-      height: 28px;
+    .spool-legend-item:hover { background: var(--bg-soft); }
+    .spool-legend-item.active { background: var(--bg-soft); }
+    .spool-legend-dot {
+      width: 8px;
+      height: 8px;
       border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
       flex-shrink: 0;
-      position: relative;
-    }
-    .spool-legend-icon svg {
-      width: 16px;
-      height: 16px;
-    }
-    .spool-legend-icon::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      border-radius: 50%;
-      border: 2px solid currentColor;
-      opacity: 0.2;
     }
     .spool-legend-info {
       flex: 1;
       min-width: 0;
     }
     .spool-legend-label {
-      font-size: 0.78rem;
+      font-size: 0.75rem;
       font-weight: 500;
       color: var(--text);
+      line-height: 1.2;
     }
     .spool-legend-bar {
-      height: 4px;
+      height: 3px;
       background: var(--bg-soft);
       border-radius: 2px;
-      margin-top: 3px;
+      margin-top: 2px;
       overflow: hidden;
     }
     .spool-legend-bar-fill {
@@ -318,42 +293,16 @@ interface PaginatedResponse<T> {
       transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
     .spool-legend-count {
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       font-weight: 700;
-      min-width: 24px;
+      min-width: 20px;
       text-align: right;
     }
     .spool-legend-pct {
-      font-size: 0.65rem;
+      font-size: 0.6rem;
       color: var(--text-muted);
-      min-width: 32px;
+      min-width: 28px;
       text-align: right;
-    }
-    .spool-tooltip {
-      position: absolute;
-      left: 50%;
-      top: -8px;
-      transform: translate(-50%, -100%);
-      background: var(--bg-elevated);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      padding: 6px 10px;
-      font-size: 0.75rem;
-      font-weight: 600;
-      white-space: nowrap;
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity 0.15s ease;
-      box-shadow: var(--shadow-sm);
-      z-index: 10;
-    }
-    .spool-donut-segment.active ~ .spool-tooltip,
-    .spool-donut:hover .spool-tooltip {
-      opacity: 0;
-    }
-    @media (max-width: 500px) {
-      .spool-chart-wrap { flex-direction: column; align-items: stretch; }
-      .spool-donut { align-self: center; width: 120px; height: 120px; }
     }
 
     .weight-progress {
@@ -1037,7 +986,7 @@ interface PaginatedResponse<T> {
           ];
           
           if (total > 0) {
-            const R = 52, CX = 70, CY = 70, SW = 18;
+            const R = 42, CX = 55, CY = 55, SW = 14;
             const C = 2 * Math.PI * R;
             let offset = 0;
             const arcs = segments.filter(s => s.count > 0).map(s => {
@@ -1049,12 +998,10 @@ interface PaginatedResponse<T> {
               return arc;
             });
 
-            const spoolSvgIcon = (color: string) => `<svg viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="9"/><line x1="12" y1="15" x2="12" y2="22"/><line x1="2" y1="12" x2="9" y2="12"/><line x1="15" y1="12" x2="22" y2="12"/></svg>`;
-
             statusContainer.innerHTML = `
               <div class="spool-chart-wrap">
                 <div class="spool-donut" id="spool-donut">
-                  <svg viewBox="0 0 140 140" style="transform: rotate(-90deg);">
+                  <svg viewBox="0 0 110 110" style="transform: rotate(-90deg);">
                     <circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="var(--border-subtle)" stroke-width="${SW}" opacity="0.3" />
                     ${arcs.join('')}
                   </svg>
@@ -1068,9 +1015,7 @@ interface PaginatedResponse<T> {
                     const pct = total > 0 ? Math.round((s.count / total) * 100) : 0;
                     return `
                       <div class="spool-legend-item" data-key="${s.key}">
-                        <div class="spool-legend-icon" style="color: ${s.color}; background: ${s.color}15;">
-                          ${spoolSvgIcon(s.color)}
-                        </div>
+                        <span class="spool-legend-dot" style="background: ${s.color};"></span>
                         <div class="spool-legend-info">
                           <div class="spool-legend-label">${s.label}</div>
                           <div class="spool-legend-bar">
