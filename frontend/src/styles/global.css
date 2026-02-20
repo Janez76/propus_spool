@@ -290,11 +290,13 @@ body {
 }
 
 /* ── Tables ──────────────────────────────────────────────────────── */
+.fm-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 .fm-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
 .fm-table th, .fm-table td {
   text-align: left;
   padding: 10px 12px;
   border-bottom: 1px solid var(--border);
+  white-space: nowrap;
 }
 .fm-table th {
   color: var(--text-muted);
@@ -537,14 +539,170 @@ body {
 .fm-widget-toggle.active { background: var(--accent); border-color: var(--accent); }
 .fm-widget-toggle.active::after { left: 18px; background: var(--btn-primary-text); }
 
-/* ── Responsive ──────────────────────────────────────────────────── */
+/* ── Touch-friendly tap targets ──────────────────────────────────── */
+@media (pointer: coarse) {
+  .fm-btn { min-height: 44px; min-width: 44px; }
+  .fm-nav-item { min-height: 44px; }
+  .fm-input, .fm-select { min-height: 44px; font-size: 16px; }
+  .fm-checkbox { width: 1.3rem; height: 1.3rem; }
+  .fm-table th, .fm-table td { padding: 12px; }
+}
+
+/* ── Tablet (<=1024px) ──────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .fm-page > main { padding: 20px !important; }
+}
+
+/* ── Mobile (<=768px) ───────────────────────────────────────────── */
 @media (max-width: 768px) {
   .fm-sidebar-toggle { display: none !important; }
-  .fm-page { grid-template-columns: var(--sidebar-collapsed-width) 1fr; }
-  .fm-sidebar { padding: 16px 8px; }
-  .fm-nav-item { justify-content: center; padding: 8px 0; }
-  .fm-nav-item span:not(.fm-nav-icon) { display: none; }
-  .fm-logo-container { justify-content: center; }
-  .fm-logo-text { display: none; }
-  .hide-collapsed { display: none !important; }
+
+  .fm-page {
+    grid-template-columns: 1fr !important;
+  }
+
+  .fm-sidebar {
+    position: fixed;
+    inset: 0;
+    width: 280px !important;
+    height: 100vh;
+    transform: translateX(-100%);
+    transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 9990;
+    border-right: 1px solid var(--border);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .fm-sidebar.mobile-open {
+    transform: translateX(0);
+  }
+
+  .fm-sidebar .hide-collapsed,
+  .fm-page.collapsed .hide-collapsed { display: flex !important; }
+  .fm-sidebar .fm-nav-item,
+  .fm-page.collapsed .fm-nav-item { justify-content: flex-start; padding: 10px 12px; }
+  .fm-sidebar .fm-nav-item span:not(.fm-nav-icon),
+  .fm-page.collapsed .fm-nav-item span:not(.fm-nav-icon) { display: inline !important; }
+  .fm-sidebar .fm-logo-container,
+  .fm-page.collapsed .fm-logo-container { justify-content: flex-start; }
+  .fm-sidebar .fm-logo-text,
+  .fm-page.collapsed .fm-logo-text { display: block !important; }
+  .fm-sidebar .fm-sidebar-content,
+  .fm-page.collapsed .fm-sidebar-content { padding: 16px 12px; }
+
+  .fm-mobile-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 9989;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 200ms ease;
+  }
+  .fm-mobile-backdrop.open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .fm-page > main {
+    padding: 16px !important;
+    padding-top: 60px !important;
+  }
+
+  .fm-mobile-header {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 52px;
+    background: var(--bg-elevated);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 16px;
+    z-index: 9988;
+  }
+
+  .fm-hamburger {
+    width: 36px; height: 36px;
+    border: none; background: none;
+    color: var(--text); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: var(--radius-sm);
+    transition: background var(--transition);
+    padding: 0;
+    font-family: var(--font-sans);
+  }
+  .fm-hamburger:hover { background: var(--bg-soft); }
+
+  .fm-mobile-title {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--text);
+    flex: 1;
+  }
+
+  .fm-modal-overlay .fm-modal,
+  .fm-modal-overlay .fm-card {
+    max-width: calc(100vw - 32px);
+    margin: 16px;
+    padding: 18px;
+    max-height: 85vh;
+    overflow-y: auto;
+  }
+
+  .fm-table { font-size: 0.8rem; }
+  .fm-table th, .fm-table td { padding: 8px 6px; }
+  .fm-inline-color-form { grid-template-columns: 1fr; }
+}
+
+/* ── Small phone (<=480px) ──────────────────────────────────────── */
+@media (max-width: 480px) {
+  .fm-page > main { padding: 10px !important; padding-top: 56px !important; }
+  .fm-card { padding: 14px; }
+  .fm-btn { padding: 8px 12px; font-size: 0.8rem; }
+  .fm-table th, .fm-table td { padding: 6px 4px; font-size: 0.75rem; }
+}
+
+/* ── Safe areas for notched devices ─────────────────────────────── */
+@supports (padding-top: env(safe-area-inset-top)) {
+  .fm-mobile-header {
+    padding-top: env(safe-area-inset-top);
+    height: calc(52px + env(safe-area-inset-top));
+  }
+  @media (max-width: 768px) {
+    .fm-page > main { padding-top: calc(60px + env(safe-area-inset-top)) !important; }
+  }
+}
+
+/* ── Hide mobile-only elements on desktop ───────────────────────── */
+.fm-mobile-header { display: none; }
+.fm-mobile-backdrop { display: none; }
+@media (max-width: 768px) {
+  .fm-mobile-header { display: flex; }
+  .fm-mobile-backdrop { display: block; }
+}
+
+/* ── Mobile form grids: stack to single column ──────────────────── */
+@media (max-width: 480px) {
+  [style*="grid-template-columns: 1fr 1fr"],
+  [style*="grid-template-columns:1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+  [style*="grid-template-columns: 1fr 1fr auto"] {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ── Mobile filter bars ─────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .filter-bar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  .filter-bar > * { width: 100% !important; min-width: 0 !important; max-width: none !important; }
+}
+
+/* ── Table overflow on small screens ────────────────────────────── */
+@media (max-width: 768px) {
+  .fm-card { overflow-x: auto; }
 }

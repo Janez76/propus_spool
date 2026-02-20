@@ -53,6 +53,10 @@ interface PaginatedResponse<T> {
       font-weight: 700;
       margin: 0;
     }
+    @media (max-width: 480px) {
+      .db-header h1 { font-size: 1.2rem; }
+      .db-header { margin-bottom: 14px; }
+    }
     .db-customize-btn {
       display: flex;
       align-items: center;
@@ -72,9 +76,15 @@ interface PaginatedResponse<T> {
 
     .stat-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-      gap: 12px;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 10px;
       margin-bottom: 20px;
+    }
+    @media (max-width: 480px) {
+      .stat-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+      .stat-card { padding: 12px; gap: 10px; }
+      .stat-icon { width: 34px; height: 34px; }
+      .stat-value { font-size: 1.2rem; }
     }
     .stat-card {
       background: var(--bg-elevated);
@@ -105,8 +115,11 @@ interface PaginatedResponse<T> {
 
     .widget-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-      gap: 16px;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 14px;
+    }
+    @media (max-width: 680px) {
+      .widget-grid { grid-template-columns: 1fr; gap: 12px; }
     }
     .widget {
       background: var(--bg-elevated);
@@ -178,6 +191,9 @@ interface PaginatedResponse<T> {
       box-shadow: var(--shadow-lg);
     }
     .customize-panel.open { right: 0; }
+    @media (max-width: 480px) {
+      .customize-panel { width: calc(100vw - 40px); right: calc(-100vw + 40px); }
+    }
     .customize-backdrop {
       position: fixed;
       inset: 0;
