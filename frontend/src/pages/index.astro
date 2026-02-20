@@ -453,24 +453,13 @@ interface PaginatedResponse<T> {
       white-space: nowrap;
     }
 
-    .pm-card {
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-sm);
-      padding: 8px 10px;
-      background: var(--bg-soft);
-      transition: border-color 0.15s;
-      cursor: pointer;
-    }
-    .pm-card:hover { border-color: var(--accent); }
+    .pm-card { padding: 0; }
+    .pm-card-active { cursor: pointer; }
     .pm-head {
       display: flex; align-items: center; gap: 6px;
       margin-bottom: 6px;
     }
     .pm-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
-    .pm-name {
-      font-weight: 600; font-size: 0.75rem; flex: 1;
-      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    }
     .pm-badge {
       font-size: 0.55rem; font-weight: 700; padding: 1px 6px;
       border-radius: 8px; text-transform: uppercase; letter-spacing: 0.03em;
@@ -631,15 +620,7 @@ interface PaginatedResponse<T> {
       </div>
     </div>
 
-    <div class="widget" data-widget="printer-monitor" draggable="true">
-      <div class="widget-header">
-        <div class="widget-title"><span class="dot" style="background: #10b981;"></span> <span>Drucker Monitor</span></div>
-        <svg class="drag-handle" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg>
-      </div>
-      <div class="widget-body" id="printer-monitor" style="max-height: none; overflow: visible; display: flex; flex-direction: column; gap: 6px;">
-        <p style="color: var(--text-muted); font-size: 0.85rem;">Laden...</p>
-      </div>
-    </div>
+    <!-- Drucker-Widgets werden dynamisch per JS eingefügt -->
 
     <div class="widget" data-widget="manufacturers" draggable="true">
       <div class="widget-header">
@@ -718,7 +699,7 @@ interface PaginatedResponse<T> {
 
     const DEFAULT_WIDGET_ORDER = [
       'spool-status', 'total-weight', 'low-stock', 'color-distribution',
-      'recent-activity', 'printer-monitor', 'manufacturers', 'filament-types',
+      'recent-activity', 'manufacturers', 'filament-types',
       'location-stats', 'filament-stats'
     ]
 
@@ -728,7 +709,6 @@ interface PaginatedResponse<T> {
       'low-stock': 'Low Stock',
       'color-distribution': 'Color Distribution',
       'recent-activity': 'Recent Activity',
-      'printer-monitor': 'Drucker Monitor',
       'manufacturers': 'Manufacturers',
       'filament-types': 'Filament Types',
       'location-stats': 'Locations',
@@ -766,13 +746,14 @@ interface PaginatedResponse<T> {
         const stored = localStorage.getItem('dashboard-widget-order')
         if (stored) {
           const order = JSON.parse(stored) as string[]
-          const allKeys = new Set(DEFAULT_WIDGET_ORDER)
+          const allWidgetKeys = [...DEFAULT_WIDGET_ORDER, ...Object.keys(WIDGET_NAMES).filter(k => k.startsWith('printer-'))]
+          const allKeys = new Set(allWidgetKeys)
           const existing = order.filter(k => allKeys.has(k))
-          const missing = DEFAULT_WIDGET_ORDER.filter(k => !existing.includes(k))
+          const missing = allWidgetKeys.filter(k => !existing.includes(k))
           return [...existing, ...missing]
         }
       } catch {}
-      return [...DEFAULT_WIDGET_ORDER]
+      return [...DEFAULT_WIDGET_ORDER, ...Object.keys(WIDGET_NAMES).filter(k => k.startsWith('printer-'))]
     }
 
     function saveWidgetOrder(order: string[]) {
@@ -1406,43 +1387,28 @@ interface PaginatedResponse<T> {
       return state === 'printing' || state === 'paused' || state === 'preparing'
     }
 
-    let pmLastIds: string = ''
     let pmLastStates: Record<number, string> = {}
+    let pmKnownIds = new Set<number>()
 
-    function pmCreateCard(p: any): HTMLElement {
-      const el = document.createElement('div')
-      el.setAttribute('data-pm-id', String(p.id))
-      pmFillCard(el, p)
-      return el
-    }
+    const DRAG_HANDLE_SVG = '<svg class="drag-handle" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg>'
 
-    function pmFillCard(el: HTMLElement, p: any) {
+    function pmBuildWidgetBody(p: any): string {
       const dotColor = PM_COLORS[p.state] || '#6b7280'
       const badgeClass = p.state || 'offline'
       const stateLabel = PM_LABELS[p.state] || p.state
 
       if (!isActive(p.state)) {
-        el.className = 'pm-card'
-        el.onclick = () => { window.location.href = `/printers/${p.id}` }
-        el.innerHTML = `
+        return `<div class="pm-card">
           <div class="pm-head">
             <span class="pm-dot" style="background:${dotColor};"></span>
-            <span class="pm-name">${p.name}</span>
             <span class="pm-badge ${badgeClass}">${stateLabel}</span>
           </div>
-          <div class="pm-idle-text"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" opacity="0.4"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>Kein aktiver Druck</div>`
-        return
+          <div class="pm-idle-text"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" opacity="0.4"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>Kein aktiver Druck</div>
+        </div>`
       }
 
       const pct = p.progress_pct ?? 0
-      el.className = 'pm-card'
-      el.onclick = () => { window.location.href = '/monitoring' }
-      el.innerHTML = `
-        <div class="pm-head">
-          <span class="pm-dot" style="background:${dotColor};"></span>
-          <span class="pm-name">${p.name}</span>
-          <span class="pm-badge ${badgeClass}">${stateLabel}</span>
-        </div>
+      return `<div class="pm-card pm-card-active" onclick="window.location.href='/monitoring'" style="cursor:pointer;">
         <div class="pm-body">
           ${p.has_camera ? `<img class="pm-cam" data-cam-id="${p.id}" src="/api/v1/printers/${p.id}/camera?t=${Date.now()}" alt="" onerror="this.style.opacity='0.2'" />` : ''}
           <div class="pm-info">
@@ -1457,22 +1423,72 @@ interface PaginatedResponse<T> {
               ${(p.layer != null && p.total_layers != null) ? `<span class="pm-stat" data-field="layer">L${p.layer}/${p.total_layers}</span>` : ''}
             </div>
           </div>
-        </div>`
+        </div>
+      </div>`
     }
 
-    function pmUpdateCard(el: HTMLElement, p: any) {
+    function pmEnsureWidget(p: any) {
+      const key = `printer-${p.id}`
+      const grid = document.getElementById('widget-grid')!
+      let widget = grid.querySelector(`[data-widget="${key}"]`) as HTMLElement | null
+
+      if (!widget) {
+        widget = document.createElement('div')
+        widget.className = 'widget'
+        widget.setAttribute('data-widget', key)
+        widget.setAttribute('draggable', 'true')
+
+        WIDGET_NAMES[key] = p.name
+        if (!DEFAULT_WIDGET_ORDER.includes(key)) {
+          DEFAULT_WIDGET_ORDER.push(key)
+        }
+
+        const dotColor = PM_COLORS[p.state] || '#6b7280'
+        widget.innerHTML = `
+          <div class="widget-header">
+            <div class="widget-title"><span class="dot" style="background:${dotColor};"></span> <span class="pm-wg-title">${p.name}</span></div>
+            ${DRAG_HANDLE_SVG}
+          </div>
+          <div class="widget-body pm-widget-body" style="max-height:none;overflow:visible;">
+            ${pmBuildWidgetBody(p)}
+          </div>`
+
+        const anchor = grid.querySelector('[data-widget="manufacturers"]')
+        if (anchor) {
+          grid.insertBefore(widget, anchor)
+        } else {
+          grid.appendChild(widget)
+        }
+
+        setupDragForWidget(widget)
+        applyWidgetVisibility()
+      }
+    }
+
+    function pmUpdateWidget(p: any) {
+      const key = `printer-${p.id}`
+      const grid = document.getElementById('widget-grid')!
+      const widget = grid.querySelector(`[data-widget="${key}"]`) as HTMLElement | null
+      if (!widget) return
+
+      const dotEl = widget.querySelector('.widget-title .dot') as HTMLElement | null
+      if (dotEl) dotEl.style.background = PM_COLORS[p.state] || '#6b7280'
+
       const prevState = pmLastStates[p.id]
-      if (prevState !== p.state || (isActive(p.state) !== isActive(prevState || ''))) {
-        pmFillCard(el, p)
+      const stateChanged = prevState !== p.state || (isActive(p.state) !== isActive(prevState || ''))
+
+      if (stateChanged) {
+        const body = widget.querySelector('.pm-widget-body')
+        if (body) body.innerHTML = pmBuildWidgetBody(p)
         pmLastStates[p.id] = p.state
         return
       }
+
       pmLastStates[p.id] = p.state
       if (!isActive(p.state)) return
 
       const pct = p.progress_pct ?? 0
-      const q = (sel: string) => el.querySelector(`[data-field="${sel}"]`) as HTMLElement | null
-
+      const q = (sel: string) => widget!.querySelector(`[data-field="${sel}"]`) as HTMLElement | null
       const jobEl = q('job'); if (jobEl) jobEl.textContent = p.job_name || 'Unbekannt'
       const barEl = q('bar') as HTMLElement | null; if (barEl) barEl.style.width = `${pct}%`
       const pctEl = q('pct'); if (pctEl) pctEl.textContent = `${pct}%`
@@ -1480,8 +1496,45 @@ interface PaginatedResponse<T> {
       const nozzleEl = q('nozzle'); if (nozzleEl && p.nozzle_temp != null) nozzleEl.innerHTML = `${Math.round(p.nozzle_temp)}°<span class="pm-stat-muted">/${p.nozzle_target ? Math.round(p.nozzle_target) : '-'}°</span>`
       const bedEl = q('bed'); if (bedEl && p.bed_temp != null) bedEl.innerHTML = `${Math.round(p.bed_temp)}°<span class="pm-stat-muted">/${p.bed_target ? Math.round(p.bed_target) : '-'}°</span>`
       const layerEl = q('layer'); if (layerEl && p.layer != null) layerEl.textContent = `L${p.layer}/${p.total_layers}`
-      const camImg = el.querySelector(`img[data-cam-id="${p.id}"]`) as HTMLImageElement | null
+      const camImg = widget.querySelector(`img[data-cam-id="${p.id}"]`) as HTMLImageElement | null
       if (camImg) camImg.src = `/api/v1/printers/${p.id}/camera?t=${Date.now()}`
+    }
+
+    function setupDragForWidget(el: HTMLElement) {
+      const grid = document.getElementById('widget-grid')!
+
+      el.addEventListener('dragstart', (e: DragEvent) => {
+        draggedWidget = el
+        el.classList.add('dragging')
+        e.dataTransfer!.effectAllowed = 'move'
+        e.dataTransfer!.setData('text/plain', el.dataset.widget || '')
+      })
+      el.addEventListener('dragend', () => {
+        el.classList.remove('dragging')
+        grid.querySelectorAll('.widget').forEach(w => w.classList.remove('drag-over'))
+        draggedWidget = null
+        const newOrder = Array.from(grid.querySelectorAll('[data-widget]')).map(w => w.getAttribute('data-widget')!)
+        saveWidgetOrder(newOrder)
+      })
+      el.addEventListener('dragover', (e: DragEvent) => {
+        e.preventDefault()
+        e.dataTransfer!.dropEffect = 'move'
+        if (draggedWidget && draggedWidget !== el) el.classList.add('drag-over')
+      })
+      el.addEventListener('dragleave', () => { el.classList.remove('drag-over') })
+      el.addEventListener('drop', (e: DragEvent) => {
+        e.preventDefault()
+        el.classList.remove('drag-over')
+        if (!draggedWidget || draggedWidget === el) return
+        const allWidgets = Array.from(grid.querySelectorAll('.widget[data-widget]'))
+        const dragIdx = allWidgets.indexOf(draggedWidget)
+        const dropIdx = allWidgets.indexOf(el)
+        if (dragIdx < dropIdx) {
+          el.parentNode!.insertBefore(draggedWidget, el.nextSibling)
+        } else {
+          el.parentNode!.insertBefore(draggedWidget, el)
+        }
+      })
     }
 
     async function loadPrinterMonitor() {
@@ -1489,32 +1542,14 @@ interface PaginatedResponse<T> {
         const res = await fetch('/api/v1/printers/status', { credentials: 'include' })
         if (!res.ok) return
         const printers = await res.json() as any[]
-        const container = document.getElementById('printer-monitor')
-        if (!container) return
 
-        if (printers.length === 0) {
-          if (container.children.length !== 1 || !container.querySelector('p')) {
-            container.innerHTML = '<p style="color: var(--text-muted); font-size: 0.85rem;">Keine Drucker</p>'
-          }
-          return
-        }
-
-        const sorted = [...printers.filter(p => isActive(p.state)), ...printers.filter(p => !isActive(p.state))]
-        const newIdKey = sorted.map(p => `${p.id}:${isActive(p.state) ? 'a' : 'i'}`).join(',')
-
-        if (newIdKey !== pmLastIds) {
-          container.innerHTML = ''
-          for (const p of sorted) {
-            container.appendChild(pmCreateCard(p))
+        for (const p of printers) {
+          if (!pmKnownIds.has(p.id)) {
+            pmEnsureWidget(p)
+            pmKnownIds.add(p.id)
             pmLastStates[p.id] = p.state
-          }
-          pmLastIds = newIdKey
-        } else {
-          for (const p of sorted) {
-            const existing = container.querySelector(`[data-pm-id="${p.id}"]`) as HTMLElement | null
-            if (existing) {
-              pmUpdateCard(existing, p)
-            }
+          } else {
+            pmUpdateWidget(p)
           }
         }
       } catch (e) {
@@ -1543,7 +1578,6 @@ interface PaginatedResponse<T> {
         WIDGET_NAMES['low-stock'] = t('dashboard.lowStockSpools')
         WIDGET_NAMES['color-distribution'] = t('dashboard.colorDistribution')
         WIDGET_NAMES['recent-activity'] = t('dashboard.recentActivity')
-        WIDGET_NAMES['printer-monitor'] = 'Drucker Monitor'
         WIDGET_NAMES['manufacturers'] = t('dashboard.manufacturersWithSpools')
         WIDGET_NAMES['filament-types'] = t('dashboard.filamentTypes')
         WIDGET_NAMES['location-stats'] = t('dashboard.locationStats')
