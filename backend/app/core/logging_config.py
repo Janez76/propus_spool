@@ -34,11 +34,7 @@ class CustomJsonFormatter(jsonlogger.JsonFormatter):
 
 
 def setup_logging():
-    # Use WARNING level in production (debug=false), INFO in development
-    if settings.debug:
-        log_level = getattr(logging, settings.log_level.upper(), logging.INFO)
-    else:
-        log_level = logging.WARNING
+    log_level = getattr(logging, settings.log_level.upper(), logging.INFO)
 
     handler = logging.StreamHandler(sys.stdout)
 
