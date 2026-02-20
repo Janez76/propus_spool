@@ -25,9 +25,7 @@ import Layout from '../layouts/Layout.astro'
       gap: 6px;
     }
     .mon-pulse {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
+      width: 8px; height: 8px; border-radius: 50%;
       background: #10b981;
       animation: pulse-ring 2s ease-out infinite;
     }
@@ -36,240 +34,232 @@ import Layout from '../layouts/Layout.astro'
       70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
       100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
     }
-    .mon-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
-      gap: 16px;
-    }
-    @media (max-width: 520px) {
-      .mon-grid { grid-template-columns: 1fr; }
-      .mon-header h1 { font-size: 1.2rem; }
-    }
 
-    .mon-card {
+    .mon-list { display: flex; flex-direction: column; gap: 14px; }
+
+    /* ── Printer card (horizontal bar) ── */
+    .mc {
       background: var(--bg-elevated);
       border: 1px solid var(--border);
       border-radius: var(--radius-md);
       overflow: hidden;
-      transition: all 0.2s ease;
+      transition: border-color 0.2s;
     }
-    .mon-card:hover {
-      border-color: var(--accent);
-      box-shadow: var(--shadow-sm);
-    }
-    .mon-card-head {
-      padding: 14px 16px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
+    .mc:hover { border-color: var(--accent); }
+
+    /* Top row: name + badge */
+    .mc-head {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 16px;
       border-bottom: 1px solid var(--border-subtle);
     }
-    .mon-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
-    .mon-card-name {
-      font-weight: 600;
-      font-size: 0.95rem;
-      flex: 1;
-      min-width: 0;
-      overflow: hidden;
-      text-overflow: ellipsis;
+    .mc-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .mc-name { font-weight: 600; font-size: 0.92rem; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .mc-model { font-size: 0.72rem; color: var(--text-muted); margin-left: 4px; }
+    .mc-badge {
+      font-size: 0.68rem; font-weight: 700; padding: 3px 10px;
+      border-radius: 12px; text-transform: uppercase; letter-spacing: 0.04em;
       white-space: nowrap;
     }
-    .mon-card-model {
-      font-size: 0.72rem;
-      color: var(--text-muted);
-    }
-    .mon-badge {
-      font-size: 0.7rem;
-      font-weight: 600;
-      padding: 3px 10px;
-      border-radius: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.03em;
-    }
-    .mon-badge.printing { background: rgba(16, 185, 129, 0.15); color: #10b981; }
-    .mon-badge.idle { background: rgba(107, 114, 128, 0.15); color: #6b7280; }
-    .mon-badge.paused { background: rgba(251, 191, 36, 0.15); color: #eab308; }
-    .mon-badge.error { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
-    .mon-badge.preparing { background: rgba(56, 189, 248, 0.15); color: #38bdf8; }
-    .mon-badge.offline { background: rgba(107, 114, 128, 0.1); color: #4b5563; }
+    .mc-badge.printing { background: rgba(16,185,129,.15); color: #10b981; }
+    .mc-badge.idle { background: rgba(107,114,128,.15); color: #6b7280; }
+    .mc-badge.paused { background: rgba(251,191,36,.15); color: #eab308; }
+    .mc-badge.error { background: rgba(239,68,68,.15); color: #ef4444; }
+    .mc-badge.preparing { background: rgba(56,189,248,.15); color: #38bdf8; }
+    .mc-badge.offline { background: rgba(107,114,128,.1); color: #4b5563; }
 
-    .mon-card-body {
-      padding: 16px;
+    /* Body – horizontal layout */
+    .mc-body {
+      display: grid;
+      grid-template-columns: auto 1fr auto auto;
+      gap: 0;
+      align-items: stretch;
     }
-    .mon-camera-wrap {
-      position: relative;
-      margin-bottom: 14px;
-      border-radius: var(--radius-sm);
+
+    /* Camera panel */
+    .mc-cam {
+      width: 200px;
+      background: #0a0a0a;
+      display: flex; align-items: center; justify-content: center;
       overflow: hidden;
-      background: var(--bg);
-      border: 1px solid var(--border-subtle);
+      border-right: 1px solid var(--border-subtle);
     }
-    .mon-camera {
-      width: 100%;
-      height: auto;
-      max-height: 300px;
-      object-fit: contain;
-      display: block;
+    .mc-cam img {
+      width: 100%; height: 100%;
+      object-fit: cover; display: block;
     }
-    .mon-no-camera {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 120px;
-      color: var(--text-muted);
-      font-size: 0.82rem;
-      gap: 8px;
+    .mc-cam-none {
+      width: 72px;
+      display: flex; align-items: center; justify-content: center;
+      border-right: 1px solid var(--border-subtle);
+      color: var(--text-muted); opacity: 0.3;
     }
-    .mon-job {
-      font-size: 0.9rem;
-      font-weight: 600;
-      margin-bottom: 10px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+
+    /* Info center */
+    .mc-info {
+      padding: 12px 16px;
+      display: flex; flex-direction: column; gap: 6px;
+      min-width: 0;
     }
-    .mon-progress-bar {
-      height: 10px;
+    .mc-job {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 0.82rem; font-weight: 600;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .mc-job svg { flex-shrink: 0; opacity: 0.5; }
+    .mc-times {
+      display: flex; gap: 8px;
+    }
+    .mc-time-box {
       background: var(--bg-soft);
-      border-radius: 5px;
-      overflow: hidden;
-      margin-bottom: 4px;
+      border-radius: var(--radius-sm);
+      padding: 4px 10px;
+      display: flex; flex-direction: column;
     }
-    .mon-progress-fill {
-      height: 100%;
-      border-radius: 5px;
-      background: linear-gradient(90deg, #10b981, #34d399);
+    .mc-time-label {
+      font-size: 0.58rem; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: 0.04em;
+    }
+    .mc-time-val {
+      font-size: 0.82rem; font-weight: 700;
+      font-family: var(--font-mono);
+    }
+    .mc-progress {
+      height: 8px;
+      background: var(--bg-soft);
+      border-radius: 4px; overflow: hidden;
+    }
+    .mc-progress-fill {
+      height: 100%; border-radius: 4px;
+      background: linear-gradient(90deg, #3b82f6, #60a5fa);
       transition: width 0.5s ease;
     }
-    .mon-progress-text {
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.75rem;
-      color: var(--text-muted);
-      margin-bottom: 14px;
+
+    /* Temps panel */
+    .mc-temps {
+      display: flex; flex-direction: column; gap: 0;
+      border-left: 1px solid var(--border-subtle);
+      min-width: 120px;
     }
-    .mon-stats {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-      gap: 10px;
+    .mc-temp {
+      flex: 1;
+      padding: 10px 14px;
+      display: flex; flex-direction: column; justify-content: center;
     }
-    .mon-stat {
-      background: var(--bg-soft);
-      border-radius: var(--radius-sm);
-      padding: 10px;
-      text-align: center;
+    .mc-temp + .mc-temp { border-top: 1px solid var(--border-subtle); }
+    .mc-temp-head {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 0.6rem; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: 0.04em;
+      margin-bottom: 2px;
     }
-    .mon-stat-label {
-      font-size: 0.65rem;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      margin-bottom: 4px;
-    }
-    .mon-stat-val {
-      font-size: 1rem;
-      font-weight: 700;
+    .mc-temp-head svg { width: 12px; height: 12px; opacity: 0.6; }
+    .mc-temp-val {
+      font-size: 1.1rem; font-weight: 700;
       font-family: var(--font-mono);
+      line-height: 1.1;
     }
-    .mon-stat-sub {
-      font-size: 0.65rem;
-      color: var(--text-muted);
-      margin-top: 1px;
-    }
+    .mc-temp-val small { font-size: 0.75rem; font-weight: 400; color: var(--text-muted); }
 
-    .mon-idle-body {
-      padding: 20px 16px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--text-muted);
-      font-size: 0.85rem;
-      gap: 8px;
+    /* AMS panel */
+    .mc-ams {
+      border-left: 1px solid var(--border-subtle);
+      padding: 8px 10px;
+      display: flex; flex-direction: column; gap: 4px;
+      min-width: 0;
     }
-
-    .mon-ams {
-      margin-top: 14px;
-      border-top: 1px solid var(--border-subtle);
-      padding-top: 12px;
+    .mc-ams-head {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 2px;
     }
-    .mon-ams-title {
-      font-size: 0.7rem;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      margin-bottom: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
+    .mc-ams-title {
+      font-size: 0.68rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.04em;
     }
-    .mon-ams-title span {
-      font-size: 0.65rem;
-      opacity: 0.7;
+    .mc-ams-sub {
+      font-size: 0.6rem; color: var(--text-muted);
     }
-    .mon-slots {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
-      gap: 6px;
+    .mc-slots {
+      display: flex; gap: 5px; flex-wrap: wrap;
     }
-    .mon-slot {
+    .mc-slot {
+      width: 82px;
       background: var(--bg);
       border: 1px solid var(--border-subtle);
       border-radius: var(--radius-sm);
-      padding: 8px 6px;
+      padding: 6px 5px 5px;
       text-align: center;
       position: relative;
       overflow: hidden;
     }
-    .mon-slot.filled { border-color: var(--border); }
-    .mon-slot-color {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 3px;
+    .mc-slot.filled { border-color: var(--border); }
+    .mc-slot-top {
+      display: flex; align-items: center; justify-content: center; gap: 4px;
+      margin-bottom: 3px;
     }
-    .mon-slot-no {
-      font-size: 0.6rem;
-      color: var(--text-muted);
-      margin-bottom: 2px;
+    .mc-slot-no {
+      font-size: 0.58rem; color: var(--text-muted); font-weight: 700;
     }
-    .mon-slot-material {
-      font-size: 0.72rem;
-      font-weight: 600;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+    .mc-slot-dot {
+      width: 14px; height: 14px; border-radius: 50%;
+      border: 2px solid var(--border);
+      flex-shrink: 0;
     }
-    .mon-slot-name {
-      font-size: 0.6rem;
-      color: var(--text-muted);
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      margin-top: 1px;
+    .mc-slot-mat {
+      font-size: 0.7rem; font-weight: 600;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
-    .mon-slot-pct {
-      font-size: 0.62rem;
-      font-family: var(--font-mono);
+    .mc-slot-name {
+      font-size: 0.58rem; color: var(--text-muted);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .mc-slot-pct-wrap {
+      margin-top: 3px;
+      height: 4px; background: var(--bg-soft);
+      border-radius: 2px; overflow: hidden;
+    }
+    .mc-slot-pct-bar {
+      height: 100%; border-radius: 2px;
+      transition: width 0.3s;
+    }
+    .mc-slot-pct-text {
+      font-size: 0.6rem; font-family: var(--font-mono);
       margin-top: 2px;
     }
-    .mon-slot-empty {
-      font-size: 0.68rem;
-      color: var(--text-muted);
-      opacity: 0.5;
+    .mc-slot-empty {
+      font-size: 0.68rem; color: var(--text-muted); opacity: 0.5;
+      padding: 6px 0;
     }
-    .mon-slot-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      display: inline-block;
-      border: 1px solid var(--border);
-      margin-bottom: 2px;
+
+    /* Idle card */
+    .mc-idle {
+      padding: 16px;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-muted); font-size: 0.82rem; gap: 8px;
+    }
+
+    /* Idle AMS below */
+    .mc-ams-standalone {
+      padding: 10px 16px 14px;
+      border-top: 1px solid var(--border-subtle);
+    }
+    .mc-ams-standalone .mc-ams-head { margin-bottom: 6px; }
+    .mc-ams-standalone .mc-slots { justify-content: flex-start; }
+
+    /* ── Responsive ── */
+    @media (max-width: 900px) {
+      .mc-body { grid-template-columns: 1fr; }
+      .mc-cam { width: 100%; height: 180px; border-right: none; border-bottom: 1px solid var(--border-subtle); }
+      .mc-cam-none { width: 100%; height: 40px; border-right: none; border-bottom: 1px solid var(--border-subtle); }
+      .mc-temps { flex-direction: row; border-left: none; border-top: 1px solid var(--border-subtle); min-width: 0; }
+      .mc-temp + .mc-temp { border-top: none; border-left: 1px solid var(--border-subtle); }
+      .mc-temp { flex: 1; }
+      .mc-ams { border-left: none; border-top: 1px solid var(--border-subtle); }
+    }
+    @media (max-width: 520px) {
+      .mon-header h1 { font-size: 1.2rem; }
+      .mc-cam { height: 140px; }
+      .mc-slot { width: 72px; }
     }
   </style>
 
@@ -281,136 +271,161 @@ import Layout from '../layouts/Layout.astro'
     </div>
   </div>
 
-  <div class="mon-grid" id="mon-grid">
-    <p style="color: var(--text-muted); font-size: 0.85rem; grid-column: 1/-1; text-align: center; padding: 40px 0;">Laden...</p>
+  <div class="mon-list" id="mon-grid">
+    <p style="color: var(--text-muted); font-size: 0.85rem; text-align: center; padding: 40px 0;">Laden...</p>
   </div>
 
   <script>
-    const STATE_COLORS: Record<string, string> = {
+    const SC: Record<string, string> = {
       printing: '#10b981', idle: '#6b7280', paused: '#eab308',
       error: '#ef4444', preparing: '#38bdf8', offline: '#4b5563'
     }
-    const STATE_LABELS: Record<string, string> = {
+    const SL: Record<string, string> = {
       printing: 'Druckt', idle: 'Bereit', paused: 'Pause',
       error: 'Fehler', preparing: 'Vorbereitung', offline: 'Offline'
     }
 
     function fmtMin(min: number | null | undefined): string {
       if (min == null || min <= 0) return '--'
-      const h = Math.floor(min / 60)
-      const m = min % 60
-      return h > 0 ? `${h}h ${m}m` : `${m}m`
+      const h = Math.floor(min / 60); const m = min % 60
+      return h > 0 ? `${h}h ${m.toString().padStart(2, '0')}m` : `${m}m`
+    }
+    function fmtSec(min: number | null | undefined): string {
+      if (min == null || min <= 0) return '0m 0s'
+      const h = Math.floor(min / 60); const m = min % 60
+      return h > 0 ? `${h}h ${m.toString().padStart(2, '0')}m ${0}s` : `${m}m ${0}s`
+    }
+    function isActive(s: string): boolean {
+      return s === 'printing' || s === 'paused' || s === 'preparing'
     }
 
-    function monIsActive(state: string): boolean {
-      return state === 'printing' || state === 'paused' || state === 'preparing'
+    const SVG_NOZZLE = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v6m0 0a4 4 0 014 4v2a2 2 0 01-2 2h-4a2 2 0 01-2-2v-2a4 4 0 014-4z"/><path d="M10 18v4m4-4v4"/></svg>`
+    const SVG_BED = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="14" width="18" height="4" rx="1"/><path d="M4 14V8a2 2 0 012-2h12a2 2 0 012 2v6"/></svg>`
+    const SVG_FILE = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`
+    const SVG_CLOCK = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" opacity="0.4"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>`
+
+    function renderSlot(s: any): string {
+      if (!s.present) {
+        return `<div class="mc-slot">
+          <div class="mc-slot-top"><span class="mc-slot-no">${s.slot_no}</span></div>
+          <div class="mc-slot-empty">Leer</div>
+        </div>`
+      }
+      const clr = s.color_hex || '#555'
+      const pct = s.remain_percent
+      const barColor = pct != null && pct < 20 ? '#ef4444' : (pct != null && pct < 50 ? '#eab308' : clr)
+      return `<div class="mc-slot filled">
+        <div class="mc-slot-top">
+          <span class="mc-slot-no">${s.slot_no}</span>
+          <span class="mc-slot-dot" style="background: ${clr}; border-color: ${clr};"></span>
+        </div>
+        <div class="mc-slot-mat">${s.material || '?'}</div>
+        ${s.designation ? `<div class="mc-slot-name">${s.designation}</div>` : ''}
+        ${pct != null ? `<div class="mc-slot-pct-wrap"><div class="mc-slot-pct-bar" style="width:${pct}%;background:${barColor};"></div></div><div class="mc-slot-pct-text">${pct}%</div>` : ''}
+      </div>`
+    }
+
+    function renderAmsBlocks(p: any, standalone = false): string {
+      const units = p.ams_units || []
+      if (units.length === 0) return ''
+      const cls = standalone ? 'mc-ams-standalone' : 'mc-ams'
+      return units.map((u: any) => {
+        const title = p.driver_key === 'klipper' ? 'Spulenhalter' : (u.name || 'AMS')
+        const active = (u.slots || []).filter((s: any) => s.present).length
+        const slotsHtml = (u.slots || []).map(renderSlot).join('')
+        return `<div class="${cls}">
+          <div class="mc-ams-head">
+            <span class="mc-ams-title">${title}</span>
+            <span class="mc-ams-sub">${active} Slots · Aktiv: ${active > 0 ? active : '–'}</span>
+          </div>
+          <div class="mc-slots">${slotsHtml}</div>
+        </div>`
+      }).join('')
+    }
+
+    function renderCard(p: any): string {
+      const dotColor = SC[p.state] || '#6b7280'
+      const label = SL[p.state] || p.state
+      const badgeCls = p.state || 'offline'
+      const active = isActive(p.state)
+
+      const head = `<div class="mc-head">
+        <span class="mc-dot" style="background:${dotColor};"></span>
+        <span class="mc-name">${p.name}</span>
+        ${p.model ? `<span class="mc-model">${p.model}</span>` : ''}
+        <span class="mc-badge ${badgeCls}" data-f="badge">${label}</span>
+      </div>`
+
+      if (!active) {
+        const ams = renderAmsBlocks(p, true)
+        return `<div class="mc" data-mon-id="${p.id}">
+          ${head}
+          <div class="mc-idle">${SVG_CLOCK} Kein aktiver Druck</div>
+          ${ams}
+        </div>`
+      }
+
+      const pct = p.progress_pct ?? 0
+
+      const camHtml = p.has_camera
+        ? `<div class="mc-cam"><img data-cam="${p.id}" src="/api/v1/printers/${p.id}/camera?t=${Date.now()}" alt="" onerror="this.style.opacity='0.2'" /></div>`
+        : `<div class="mc-cam-none"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg></div>`
+
+      const elapsed = p.elapsed_min != null ? fmtMin(p.elapsed_min) : '–'
+      const total = p.remaining_min != null && p.elapsed_min != null ? fmtMin(p.elapsed_min + p.remaining_min) : (p.remaining_min != null ? fmtMin(p.remaining_min) : '–')
+
+      const infoHtml = `<div class="mc-info">
+        <div class="mc-job" data-f="job">${SVG_FILE} ${p.job_name || 'Unbekannt'}</div>
+        <div class="mc-times">
+          <div class="mc-time-box"><span class="mc-time-label">Laufzeit</span><span class="mc-time-val" data-f="elapsed">${elapsed}</span></div>
+          <div class="mc-time-box"><span class="mc-time-label">Gesamt</span><span class="mc-time-val" data-f="total">${total}</span></div>
+        </div>
+        <div class="mc-progress"><div class="mc-progress-fill" data-f="bar" style="width:${pct}%;"></div></div>
+      </div>`
+
+      const tempsHtml = `<div class="mc-temps">
+        ${p.nozzle_temp != null ? `<div class="mc-temp"><div class="mc-temp-head">${SVG_NOZZLE} Düse</div><div class="mc-temp-val" data-f="nozzle">${Math.round(p.nozzle_temp)}° <small>/ ${p.nozzle_target ? Math.round(p.nozzle_target) : '–'}°</small></div></div>` : ''}
+        ${p.bed_temp != null ? `<div class="mc-temp"><div class="mc-temp-head">${SVG_BED} Bett</div><div class="mc-temp-val" data-f="bed">${Math.round(p.bed_temp)}° <small>/ ${p.bed_target ? Math.round(p.bed_target) : '–'}°</small></div></div>` : ''}
+        ${p.layer != null && p.total_layers != null ? `<div class="mc-temp"><div class="mc-temp-head">Layer</div><div class="mc-temp-val" data-f="layer">${p.layer} <small>/ ${p.total_layers}</small></div></div>` : ''}
+      </div>`
+
+      const amsHtml = renderAmsBlocks(p)
+
+      return `<div class="mc" data-mon-id="${p.id}">
+        ${head}
+        <div class="mc-body">
+          ${camHtml}
+          ${infoHtml}
+          ${tempsHtml}
+          ${amsHtml}
+        </div>
+      </div>`
     }
 
     let monLastIds = ''
     let monLastStates: Record<number, string> = {}
 
-    function monBuildCard(p: any): HTMLDivElement {
-      const card = document.createElement('div')
-      card.className = 'mon-card'
-      card.setAttribute('data-mon-id', String(p.id))
-      monRenderCard(card, p)
-      return card
-    }
-
-    function renderAmsHtml(p: any): string {
-      const units = p.ams_units || []
-      if (units.length === 0) return ''
-      return units.map((u: any) => {
-        const title = p.driver_key === 'klipper' ? 'Spulenhalter' : (u.name || `AMS #${u.unit_no}`)
-        const activeCount = (u.slots || []).filter((s: any) => s.present).length
-        const slotsHtml = (u.slots || []).map((s: any) => {
-          if (!s.present) {
-            return `<div class="mon-slot"><div class="mon-slot-no">${s.slot_no}</div><div class="mon-slot-empty">Leer</div></div>`
-          }
-          const colorBar = s.color_hex ? `<div class="mon-slot-color" style="background: ${s.color_hex};"></div>` : ''
-          const dotStyle = s.color_hex ? `background: ${s.color_hex};` : ''
-          return `<div class="mon-slot filled">
-            ${colorBar}
-            <div class="mon-slot-no">${s.slot_no}</div>
-            <div class="mon-slot-dot" style="${dotStyle}"></div>
-            <div class="mon-slot-material">${s.material || '?'}</div>
-            ${s.designation ? `<div class="mon-slot-name">${s.designation}</div>` : ''}
-            ${s.remain_percent != null ? `<div class="mon-slot-pct">${s.remain_percent}%</div>` : ''}
-          </div>`
-        }).join('')
-        return `<div class="mon-ams"><div class="mon-ams-title">${title} <span>${activeCount}/${u.slots_total} belegt</span></div><div class="mon-slots">${slotsHtml}</div></div>`
-      }).join('')
-    }
-
-    function monRenderCard(card: HTMLElement, p: any) {
-      const dotColor = STATE_COLORS[p.state] || '#6b7280'
-      const label = STATE_LABELS[p.state] || p.state
-      const badgeCls = p.state || 'offline'
-      const active = monIsActive(p.state)
-      const amsHtml = renderAmsHtml(p)
-
-      let bodyHtml: string
-      if (!active) {
-        bodyHtml = `<div class="mon-idle-body" style="flex-direction: column; gap: 4px;"><div style="display: flex; align-items: center; gap: 8px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" opacity="0.4"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>Kein aktiver Druck</div></div>${amsHtml ? `<div style="padding: 0 16px 16px;">${amsHtml}</div>` : ''}`
-      } else {
-        const pct = p.progress_pct ?? 0
-        const camHtml = p.has_camera
-          ? `<div class="mon-camera-wrap"><img class="mon-camera" data-cam="${p.id}" src="/api/v1/printers/${p.id}/camera?t=${Date.now()}" alt="Kamera" onerror="this.style.display='none'" /></div>`
-          : ''
-
-        bodyHtml = `
-          <div class="mon-card-body">
-            ${camHtml}
-            <div class="mon-job" data-f="job">${p.job_name || 'Unbekannter Druckjob'}</div>
-            <div class="mon-progress-bar"><div class="mon-progress-fill" data-f="bar" style="width: ${pct}%;"></div></div>
-            <div class="mon-progress-text">
-              <span data-f="pct">${pct}% abgeschlossen</span>
-              <span data-f="time">${p.remaining_min != null ? fmtMin(p.remaining_min) + ' verbleibend' : ''}</span>
-            </div>
-            <div class="mon-stats">
-              ${p.nozzle_temp != null ? `<div class="mon-stat"><div class="mon-stat-label">Düse</div><div class="mon-stat-val" data-f="nozzle">${p.nozzle_temp}°C</div>${p.nozzle_target ? `<div class="mon-stat-sub" data-f="nozzle-t">Ziel: ${p.nozzle_target}°C</div>` : ''}</div>` : ''}
-              ${p.bed_temp != null ? `<div class="mon-stat"><div class="mon-stat-label">Bett</div><div class="mon-stat-val" data-f="bed">${p.bed_temp}°C</div>${p.bed_target ? `<div class="mon-stat-sub" data-f="bed-t">Ziel: ${p.bed_target}°C</div>` : ''}</div>` : ''}
-              ${p.remaining_min != null ? `<div class="mon-stat"><div class="mon-stat-label">Restzeit</div><div class="mon-stat-val" data-f="remain">${fmtMin(p.remaining_min)}</div></div>` : (p.elapsed_min != null ? `<div class="mon-stat"><div class="mon-stat-label">Vergangen</div><div class="mon-stat-val" data-f="elapsed">${fmtMin(p.elapsed_min)}</div></div>` : '')}
-              ${(p.layer != null && p.total_layers != null) ? `<div class="mon-stat"><div class="mon-stat-label">Layer</div><div class="mon-stat-val" data-f="layer">${p.layer}/${p.total_layers}</div></div>` : ''}
-            </div>
-            ${amsHtml}
-          </div>`
-      }
-
-      card.innerHTML = `
-        <div class="mon-card-head">
-          <span class="mon-dot" style="background: ${dotColor};"></span>
-          <span class="mon-card-name">${p.name}</span>
-          ${p.model ? `<span class="mon-card-model">${p.model}</span>` : ''}
-          <span class="mon-badge ${badgeCls}" data-f="badge">${label}</span>
-        </div>
-        ${bodyHtml}`
-    }
-
-    function monPatchCard(card: HTMLElement, p: any) {
+    function patchCard(card: HTMLElement, p: any) {
       const prev = monLastStates[p.id]
-      if (prev !== p.state || (monIsActive(p.state) !== monIsActive(prev || ''))) {
-        monRenderCard(card, p)
+      if (prev !== p.state || (isActive(p.state) !== isActive(prev || ''))) {
+        card.outerHTML = renderCard(p)
         monLastStates[p.id] = p.state
         return
       }
       monLastStates[p.id] = p.state
-      if (!monIsActive(p.state)) return
+      if (!isActive(p.state)) return
 
       const q = (f: string) => card.querySelector(`[data-f="${f}"]`) as HTMLElement | null
       const pct = p.progress_pct ?? 0
-
-      const jobEl = q('job'); if (jobEl) jobEl.textContent = p.job_name || 'Unbekannter Druckjob'
+      const jobEl = q('job'); if (jobEl) jobEl.innerHTML = `${SVG_FILE} ${p.job_name || 'Unbekannt'}`
       const barEl = q('bar'); if (barEl) barEl.style.width = `${pct}%`
-      const pctEl = q('pct'); if (pctEl) pctEl.textContent = `${pct}% abgeschlossen`
-      const timeEl = q('time'); if (timeEl) timeEl.textContent = p.remaining_min != null ? fmtMin(p.remaining_min) + ' verbleibend' : ''
-      const nozzleEl = q('nozzle'); if (nozzleEl && p.nozzle_temp != null) nozzleEl.textContent = `${p.nozzle_temp}°C`
-      const nozzleTEl = q('nozzle-t'); if (nozzleTEl && p.nozzle_target != null) nozzleTEl.textContent = `Ziel: ${p.nozzle_target}°C`
-      const bedEl = q('bed'); if (bedEl && p.bed_temp != null) bedEl.textContent = `${p.bed_temp}°C`
-      const bedTEl = q('bed-t'); if (bedTEl && p.bed_target != null) bedTEl.textContent = `Ziel: ${p.bed_target}°C`
-      const remainEl = q('remain'); if (remainEl) remainEl.textContent = fmtMin(p.remaining_min)
-      const elapsedEl = q('elapsed'); if (elapsedEl) elapsedEl.textContent = fmtMin(p.elapsed_min)
-      const layerEl = q('layer'); if (layerEl && p.layer != null) layerEl.textContent = `${p.layer}/${p.total_layers}`
+      const elapsed = p.elapsed_min != null ? fmtMin(p.elapsed_min) : '–'
+      const total = p.remaining_min != null && p.elapsed_min != null ? fmtMin(p.elapsed_min + p.remaining_min) : (p.remaining_min != null ? fmtMin(p.remaining_min) : '–')
+      const elapsedEl = q('elapsed'); if (elapsedEl) elapsedEl.textContent = elapsed
+      const totalEl = q('total'); if (totalEl) totalEl.textContent = total
+      const nozzleEl = q('nozzle'); if (nozzleEl && p.nozzle_temp != null) nozzleEl.innerHTML = `${Math.round(p.nozzle_temp)}° <small>/ ${p.nozzle_target ? Math.round(p.nozzle_target) : '–'}°</small>`
+      const bedEl = q('bed'); if (bedEl && p.bed_temp != null) bedEl.innerHTML = `${Math.round(p.bed_temp)}° <small>/ ${p.bed_target ? Math.round(p.bed_target) : '–'}°</small>`
+      const layerEl = q('layer'); if (layerEl && p.layer != null) layerEl.innerHTML = `${p.layer} <small>/ ${p.total_layers}</small>`
 
       const camImg = card.querySelector(`img[data-cam="${p.id}"]`) as HTMLImageElement | null
       if (camImg) camImg.src = `/api/v1/printers/${p.id}/camera?t=${Date.now()}`
@@ -425,26 +440,21 @@ import Layout from '../layouts/Layout.astro'
         if (!grid) return
 
         if (printers.length === 0) {
-          if (!grid.querySelector('p')) {
-            grid.innerHTML = '<p style="color: var(--text-muted); font-size: 0.85rem; grid-column: 1/-1; text-align: center; padding: 40px 0;">Keine Drucker konfiguriert</p>'
-          }
+          grid.innerHTML = '<p style="color: var(--text-muted); font-size: 0.85rem; text-align: center; padding: 40px 0;">Keine Drucker konfiguriert</p>'
           return
         }
 
-        const sorted = [...printers.filter(p => monIsActive(p.state)), ...printers.filter(p => !monIsActive(p.state))]
-        const newIdKey = sorted.map(p => `${p.id}:${monIsActive(p.state)?1:0}`).join(',')
+        const sorted = [...printers.filter(p => isActive(p.state)), ...printers.filter(p => !isActive(p.state))]
+        const newIdKey = sorted.map(p => `${p.id}:${isActive(p.state)?1:0}`).join(',')
 
         if (newIdKey !== monLastIds) {
-          grid.innerHTML = ''
-          for (const p of sorted) {
-            grid.appendChild(monBuildCard(p))
-            monLastStates[p.id] = p.state
-          }
+          grid.innerHTML = sorted.map(renderCard).join('')
+          for (const p of sorted) monLastStates[p.id] = p.state
           monLastIds = newIdKey
         } else {
           for (const p of sorted) {
-            const existing = grid.querySelector(`[data-mon-id="${p.id}"]`) as HTMLElement | null
-            if (existing) monPatchCard(existing, p)
+            const el = grid.querySelector(`[data-mon-id="${p.id}"]`) as HTMLElement | null
+            if (el) patchCard(el, p)
           }
         }
       } catch (e) {
