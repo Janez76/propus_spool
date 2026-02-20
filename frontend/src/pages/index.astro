@@ -864,14 +864,21 @@ interface PaginatedResponse<T> {
 
     // ── Load data ──────────────────────────────────────────────────
     async function loadDashboardData() {
+      const dbg = document.getElementById('spool-status')!
       try {
+        dbg.textContent = 'Fetching data...'
+        const controller = new AbortController()
+        const timeout = setTimeout(() => controller.abort(), 15000)
+
         const [spoolsRes, filamentsRes, dashboardRes] = await Promise.all([
-          fetch('/api/v1/spools?page_size=200', { credentials: 'include' }),
-          fetch('/api/v1/filaments?page_size=200', { credentials: 'include' }),
-          fetch('/api/v1/dashboard/stats?limit=20', { credentials: 'include' }),
+          fetch('/api/v1/spools?page_size=200', { credentials: 'include', signal: controller.signal }),
+          fetch('/api/v1/filaments?page_size=200', { credentials: 'include', signal: controller.signal }),
+          fetch('/api/v1/dashboard/stats?limit=20', { credentials: 'include', signal: controller.signal }),
         ])
-        
-        if (!spoolsRes.ok || !filamentsRes.ok) throw new Error('Failed to fetch data')
+        clearTimeout(timeout)
+
+        dbg.textContent = `API: spools=${spoolsRes.status} filaments=${filamentsRes.status} dashboard=${dashboardRes.status}`
+        if (!spoolsRes.ok || !filamentsRes.ok) throw new Error(`Fetch failed: spools=${spoolsRes.status} filaments=${filamentsRes.status}`)
         
         const spoolsData = await spoolsRes.json()
         const filamentsData = await filamentsRes.json()
