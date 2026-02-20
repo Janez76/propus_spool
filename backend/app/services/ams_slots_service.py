@@ -173,6 +173,7 @@ class AmsSlotsService:
         assignment.external_id = external_id
         assignment.inserted_at = event_at
         assignment.updated_at = event_at
+        assignment.meta = meta
 
         event = await self._create_slot_event(
             printer_id=printer_id,
@@ -317,6 +318,8 @@ class AmsSlotsService:
                 rfid_uid = slot_data.get("rfid_uid")
                 external_id = slot_data.get("external_id")
                 present = slot_data.get("present", False)
+                slot_meta = slot_data.get("meta") or {}
+                slot_meta["source"] = "ams_state"
 
                 if present:
                     slot, event = await self.apply_spool_inserted(
@@ -326,7 +329,7 @@ class AmsSlotsService:
                         rfid_uid=rfid_uid,
                         external_id=external_id,
                         ams_unit_no=ams_unit_no,
-                        meta={"source": "ams_state"},
+                        meta=slot_meta,
                     )
                     events.append(event)
                 else:

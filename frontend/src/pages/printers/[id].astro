@@ -214,28 +214,57 @@ const { id } = Astro.params
     
     function renderAmsUnits() {
       const container = document.getElementById('ams-units')!
-      
-      container.innerHTML = printer.ams_units.map((unit: any) => `
-        <div class="fm-card">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-            <div>
-              <h3 style="font-weight: 600;">${unit.name || t('printers.amsUnitLabel', { no: unit.ams_unit_no })}</h3>
-              <p style="font-size: 0.85rem; color: var(--text-muted);">${t('printers.unitLabel', { no: unit.ams_unit_no })} · ${t('printers.slots', { count: unit.slots_total })}</p>
-            </div>
-            <span style="padding: 2px 8px; font-size: 0.75rem; border-radius: 999px; background: var(--bg-soft); ${unit.is_active ? 'color: var(--accent-2);' : 'color: var(--error-text);'}">
-              ${unit.is_active ? t('common.active') : t('common.inactive')}
-            </span>
-          </div>
-          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
-            ${Array.from({ length: unit.slots_total }, (_, i) => `
-              <div style="padding: 12px; background: var(--bg-soft); border-radius: var(--radius-sm); text-align: center;">
-                <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;">${t('printers.slotLabel', { no: i + 1 })}</div>
-                <div style="font-size: 0.85rem; font-weight: 500; color: var(--text-muted);">${t('common.empty')}</div>
+      const slots: any[] = printer.slots || []
+
+      container.innerHTML = printer.ams_units.map((unit: any) => {
+        const unitSlots = slots.filter((s: any) => s.ams_unit_id === unit.id)
+
+        const slotCards = Array.from({ length: unit.slots_total }, (_, i) => {
+          const slotNo = i + 1
+          const slot = unitSlots.find((s: any) => s.slot_no === slotNo)
+          const a = slot?.assignment
+          const present = a?.present
+          const meta = a?.meta || {}
+          const material = meta.material || ''
+          const colorHex = meta.color_hex || ''
+          const remain = meta.remain_percent
+
+          if (present) {
+            const colorSwatch = colorHex
+              ? `<span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:#${colorHex};border:1px solid rgba(255,255,255,0.2);vertical-align:middle;margin-right:4px;"></span>`
+              : ''
+            const remainText = remain != null ? `${remain}%` : ''
+            return `
+              <div style="padding: 12px; background: var(--bg-soft); border-radius: var(--radius-sm); text-align: center; border: 1px solid var(--accent-2);">
+                <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;">${t('printers.slotLabel', { no: slotNo })}</div>
+                <div style="font-size: 0.9rem; font-weight: 600; margin-bottom: 2px;">${colorSwatch}${material || '?'}</div>
+                ${remainText ? `<div style="font-size: 0.75rem; color: var(--text-muted);">${remainText}</div>` : ''}
+              </div>`
+          }
+
+          return `
+            <div style="padding: 12px; background: var(--bg-soft); border-radius: var(--radius-sm); text-align: center;">
+              <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;">${t('printers.slotLabel', { no: slotNo })}</div>
+              <div style="font-size: 0.85rem; font-weight: 500; color: var(--text-muted);">${t('common.empty')}</div>
+            </div>`
+        }).join('')
+
+        return `
+          <div class="fm-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <div>
+                <h3 style="font-weight: 600;">${unit.name || t('printers.amsUnitLabel', { no: unit.ams_unit_no })}</h3>
+                <p style="font-size: 0.85rem; color: var(--text-muted);">${t('printers.unitLabel', { no: unit.ams_unit_no })} · ${t('printers.slots', { count: unit.slots_total })}</p>
               </div>
-            `).join('')}
-          </div>
-        </div>
-      `).join('')
+              <span style="padding: 2px 8px; font-size: 0.75rem; border-radius: 999px; background: var(--bg-soft); ${unit.is_active ? 'color: var(--accent-2);' : 'color: var(--error-text);'}">
+                ${unit.is_active ? t('common.active') : t('common.inactive')}
+              </span>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+              ${slotCards}
+            </div>
+          </div>`
+      }).join('')
     }
     
     document.getElementById('btn-add-ams')?.addEventListener('click', () => {

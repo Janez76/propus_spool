@@ -5,7 +5,7 @@ from sqlalchemy.orm import selectinload
 
 from app.api.deps import DBSession, PrincipalDep, RequirePermission
 from app.api.v1.schemas import PaginatedResponse
-from app.models import Location, Printer, PrinterAmsUnit, PrinterSlot
+from app.models import Location, Printer, PrinterAmsUnit, PrinterSlot, PrinterSlotAssignment
 
 router = APIRouter(prefix="/printers", tags=["printers"])
 
@@ -43,6 +43,17 @@ class AmsUnitResponse(BaseModel):
         from_attributes = True
 
 
+class SlotAssignmentResponse(BaseModel):
+    present: bool = False
+    spool_id: int | None = None
+    rfid_uid: str | None = None
+    external_id: str | None = None
+    meta: dict | None = None
+
+    class Config:
+        from_attributes = True
+
+
 class SlotResponse(BaseModel):
     id: int
     printer_id: int
@@ -51,6 +62,7 @@ class SlotResponse(BaseModel):
     slot_no: int
     name: str | None
     is_active: bool
+    assignment: SlotAssignmentResponse | None = None
 
     class Config:
         from_attributes = True
@@ -136,7 +148,10 @@ async def get_printer(
     result = await db.execute(
         select(Printer)
         .where(Printer.id == printer_id, Printer.deleted_at.is_(None))
-        .options(selectinload(Printer.ams_units), selectinload(Printer.slots))
+        .options(
+            selectinload(Printer.ams_units),
+            selectinload(Printer.slots).selectinload(PrinterSlot.assignment),
+        )
     )
     printer = result.scalar_one_or_none()
 
