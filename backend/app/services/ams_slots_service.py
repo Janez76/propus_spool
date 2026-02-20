@@ -4,7 +4,9 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import Printer, PrinterAmsUnit, PrinterSlot, PrinterSlotAssignment, PrinterSlotEvent, Spool
+from sqlalchemy.orm import selectinload
+
+from app.models import Filament, FilamentColor, Color, Printer, PrinterAmsUnit, PrinterSlot, PrinterSlotAssignment, PrinterSlotEvent, Spool
 
 
 class AmsSlotsService:
@@ -96,9 +98,11 @@ class AmsSlotsService:
         rfid_uid: str | None,
         external_id: str | None,
     ) -> Spool | None:
+        load_opts = selectinload(Spool.filament).selectinload(Filament.filament_colors).selectinload(FilamentColor.color)
+
         if rfid_uid:
             result = await self.db.execute(
-                select(Spool).where(Spool.rfid_uid == rfid_uid, Spool.deleted_at.is_(None))
+                select(Spool).where(Spool.rfid_uid == rfid_uid, Spool.deleted_at.is_(None)).options(load_opts)
             )
             spool = result.scalar_one_or_none()
             if spool:
@@ -106,11 +110,36 @@ class AmsSlotsService:
 
         if external_id:
             result = await self.db.execute(
-                select(Spool).where(Spool.external_id == external_id, Spool.deleted_at.is_(None))
+                select(Spool).where(Spool.external_id == external_id, Spool.deleted_at.is_(None)).options(load_opts)
             )
             return result.scalar_one_or_none()
 
         return None
+
+    def _build_spool_meta(self, spool: Spool, source: str = "klipper_poll") -> dict[str, Any]:
+        """Build meta dict with filament info from a Spool object."""
+        fil = spool.filament if spool else None
+        color_hex = ""
+        if fil and hasattr(fil, "filament_colors") and fil.filament_colors:
+            first_color = sorted(fil.filament_colors, key=lambda c: c.position)
+            if first_color and first_color[0].color:
+                color_hex = first_color[0].color.hex_code.lstrip("#") + "FF"
+
+        remain_pct = None
+        if spool.remaining_weight_g is not None and spool.initial_total_weight_g:
+            empty = spool.empty_spool_weight_g or 0
+            net_initial = spool.initial_total_weight_g - empty
+            if net_initial > 0:
+                remain_pct = round((spool.remaining_weight_g / net_initial) * 100)
+
+        return {
+            "material": fil.type if fil else "",
+            "designation": fil.designation if fil else "",
+            "color_hex": color_hex,
+            "remain_percent": remain_pct,
+            "weight_g": str(int(spool.remaining_weight_g)) if spool.remaining_weight_g else None,
+            "source": source,
+        }
 
     async def _create_slot_event(
         self,
@@ -182,6 +211,10 @@ class AmsSlotsService:
             (external_id and external_id != current_ext)
             or (incoming_spool_id is not None and incoming_spool_id != assignment.spool_id)
         )
+
+        if spool and event_source == "klipper_poll":
+            enriched_meta = self._build_spool_meta(spool, source="klipper_poll")
+            meta = enriched_meta
 
         assignment.present = True
         if is_manual and not spool_changed and not force_update:
