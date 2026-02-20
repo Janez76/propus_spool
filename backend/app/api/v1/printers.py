@@ -110,10 +110,20 @@ async def create_printer(
                 detail={"code": "validation_error", "message": "Location not found"},
             )
 
-    printer = Printer(**data.model_dump())
+    dump = data.model_dump()
+    if dump.get("driver_key") in ("bambu",) and dump.get("serial_number"):
+        cfg = dump.get("driver_config") or {}
+        cfg.setdefault("serial_number", dump["serial_number"])
+        dump["driver_config"] = cfg
+
+    printer = Printer(**dump)
     db.add(printer)
     await db.commit()
     await db.refresh(printer)
+
+    from app.plugins.manager import plugin_manager
+    await plugin_manager.start_printer(printer)
+
     return printer
 
 
@@ -157,11 +167,23 @@ async def update_printer(
             detail={"code": "not_found", "message": "Printer not found"},
         )
 
-    for key, value in data.model_dump(exclude_unset=True).items():
+    updates = data.model_dump(exclude_unset=True)
+    for key, value in updates.items():
         setattr(printer, key, value)
+
+    if printer.driver_key == "bambu" and printer.serial_number:
+        cfg = printer.driver_config or {}
+        cfg.setdefault("serial_number", printer.serial_number)
+        printer.driver_config = cfg
 
     await db.commit()
     await db.refresh(printer)
+
+    from app.plugins.manager import plugin_manager
+    await plugin_manager.stop_printer(printer.id)
+    if printer.is_active:
+        await plugin_manager.start_printer(printer)
+
     return printer
 
 

@@ -82,6 +82,7 @@ import Layout from '../../layouts/Layout.astro'
           >
             <option value="dummy" data-i18n="printers.driverDummy">Dummy (Testing)</option>
             <option value="bambu" data-i18n="printers.driverBambu">Bambu Lab</option>
+            <option value="klipper">Klipper / Moonraker</option>
           </select>
         </div>
         <div>
@@ -94,6 +95,8 @@ import Layout from '../../layouts/Layout.astro'
             class="fm-input"
           />
         </div>
+        <!-- Dynamic driver config fields -->
+        <div id="driver-config-fields"></div>
         <div id="modal-error" class="fm-alert-error hidden"></div>
         <div style="display: flex; gap: 12px;">
           <button type="submit" id="modal-submit" class="fm-btn fm-btn-primary" data-i18n="common.save">
@@ -172,15 +175,25 @@ import Layout from '../../layouts/Layout.astro'
       `).join('')
       
       document.querySelectorAll('.btn-edit').forEach(btn => {
-        btn.addEventListener('click', (e) => {
+        btn.addEventListener('click', async (e) => {
           const target = e.currentTarget as HTMLButtonElement
+          const id = parseInt(target.dataset.id!)
+          let driverConfig = {}
+          try {
+            const resp = await fetch(`/api/v1/printers/${id}`, { credentials: 'include' })
+            if (resp.ok) {
+              const detail = await resp.json()
+              driverConfig = detail.driver_config || {}
+            }
+          } catch {}
           openModal(
-            parseInt(target.dataset.id!),
+            id,
             target.dataset.name!,
             target.dataset.manufacturer!,
             target.dataset.model!,
             target.dataset.driver!,
-            target.dataset.serial!
+            target.dataset.serial!,
+            driverConfig,
           )
         })
       })
@@ -213,7 +226,59 @@ import Layout from '../../layouts/Layout.astro'
       })
     }
     
-    function openModal(id: number | null = null, name: string = '', manufacturer: string = '', model: string = '', driver: string = 'dummy', serial: string = '') {
+    let currentDriverConfig: Record<string, any> = {}
+
+    function renderDriverConfigFields(driverKey: string) {
+      const container = document.getElementById('driver-config-fields')!
+      if (driverKey === 'bambu') {
+        container.innerHTML = `
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div>
+              <label for="cfg-host" class="fm-label">IP-Adresse *</label>
+              <input type="text" id="cfg-host" class="fm-input" placeholder="192.168.1.x" value="${currentDriverConfig.host || ''}" required />
+            </div>
+            <div>
+              <label for="cfg-access-code" class="fm-label">Access Code *</label>
+              <input type="text" id="cfg-access-code" class="fm-input" placeholder="8-stelliger Code" value="${currentDriverConfig.access_code || ''}" required />
+            </div>
+          </div>
+        `
+      } else if (driverKey === 'klipper') {
+        container.innerHTML = `
+          <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 16px;">
+            <div>
+              <label for="cfg-host" class="fm-label">Moonraker URL *</label>
+              <input type="text" id="cfg-host" class="fm-input" placeholder="http://192.168.1.x:7125" value="${currentDriverConfig.host || ''}" required />
+            </div>
+            <div>
+              <label for="cfg-api-key" class="fm-label">API Key</label>
+              <input type="text" id="cfg-api-key" class="fm-input" placeholder="Optional" value="${currentDriverConfig.api_key || ''}" />
+            </div>
+          </div>
+        `
+      } else {
+        container.innerHTML = ''
+      }
+    }
+
+    function collectDriverConfig(driverKey: string): Record<string, any> | null {
+      if (driverKey === 'bambu') {
+        const host = (document.getElementById('cfg-host') as HTMLInputElement)?.value || ''
+        const code = (document.getElementById('cfg-access-code') as HTMLInputElement)?.value || ''
+        if (!host || !code) return null
+        return { host, access_code: code }
+      } else if (driverKey === 'klipper') {
+        const host = (document.getElementById('cfg-host') as HTMLInputElement)?.value || ''
+        if (!host) return null
+        const apiKey = (document.getElementById('cfg-api-key') as HTMLInputElement)?.value || ''
+        const cfg: Record<string, any> = { host }
+        if (apiKey) cfg.api_key = apiKey
+        return cfg
+      }
+      return null
+    }
+
+    function openModal(id: number | null = null, name: string = '', manufacturer: string = '', model: string = '', driver: string = 'dummy', serial: string = '', driverConfig: Record<string, any> = {}) {
       const container = document.getElementById('modal-container')!
       const title = document.getElementById('modal-title')!
       const idInput = document.getElementById('printer-id') as HTMLInputElement
@@ -231,11 +296,19 @@ import Layout from '../../layouts/Layout.astro'
       modelInput.value = model
       driverInput.value = driver
       serialInput.value = serial
+      currentDriverConfig = driverConfig || {}
       error.classList.add('hidden')
       
+      renderDriverConfigFields(driver)
       container.classList.add('open')
       nameInput.focus()
     }
+
+    document.getElementById('printer-driver')?.addEventListener('change', (e) => {
+      const val = (e.target as HTMLSelectElement).value
+      currentDriverConfig = {}
+      renderDriverConfigFields(val)
+    })
     
     function closeModal() {
       document.getElementById('modal-container')!.classList.remove('open')
@@ -256,7 +329,9 @@ import Layout from '../../layouts/Layout.astro'
       const error = document.getElementById('modal-error') as HTMLDivElement
       const submitBtn = document.getElementById('modal-submit') as HTMLButtonElement
       
-      const data = { name, manufacturer, model, driver_key, serial_number }
+      const driver_config = collectDriverConfig(driver_key)
+      const data: Record<string, any> = { name, manufacturer, model, driver_key, serial_number }
+      if (driver_config) data.driver_config = driver_config
       
       error.classList.add('hidden')
       submitBtn.disabled = true
