@@ -14,7 +14,7 @@ from app.plugins.base import BaseDriver
 
 logger = logging.getLogger(__name__)
 
-POLL_INTERVAL = 30
+POLL_INTERVAL = 10
 
 
 class Driver(BaseDriver):
@@ -210,3 +210,63 @@ class Driver(BaseDriver):
         except Exception:
             pass
         return None
+
+    async def send_command(self, command: dict[str, Any]) -> bool:
+        """Send commands to Klipper via Moonraker.
+
+        Supported commands:
+          set_spool   – writes tN__spool_id save_variable
+          clear_spool – clears tN__spool_id save_variable
+        """
+        cmd = command.get("command")
+        host = self.config["host"].rstrip("/")
+        if not host.startswith("http://") and not host.startswith("https://"):
+            host = f"http://{host}"
+        api_key = self.config.get("api_key", "")
+        headers: dict[str, str] = {}
+        if api_key:
+            headers["X-Api-Key"] = api_key
+
+        if cmd == "set_spool":
+            tool_idx = command.get("tool_index", 0)
+            spool_id = command.get("spool_id", 0)
+            ok = await self._set_save_variable(host, headers, f"t{tool_idx}__spool_id", spool_id)
+            if ok:
+                self._last_slot_spools[tool_idx + 1] = spool_id
+            return ok
+
+        if cmd == "clear_spool":
+            tool_idx = command.get("tool_index", 0)
+            ok = await self._set_save_variable(host, headers, f"t{tool_idx}__spool_id", '""')
+            if ok:
+                self._last_slot_spools[tool_idx + 1] = None
+            return ok
+
+        logger.warning(f"Klipper driver: unknown command '{cmd}' for printer {self.printer_id}")
+        return False
+
+    async def _set_save_variable(
+        self, host: str, headers: dict[str, str], var_name: str, value: Any
+    ) -> bool:
+        """Write a Klipper save_variable via Moonraker gcode/script."""
+        gcode = f"SAVE_VARIABLE VARIABLE={var_name} VALUE={value}"
+        try:
+            async with httpx.AsyncClient(timeout=10.0, headers=headers) as client:
+                resp = await client.post(
+                    f"{host}/printer/gcode/script",
+                    json={"script": gcode},
+                )
+                if resp.status_code == 200:
+                    logger.info(
+                        f"Klipper printer {self.printer_id}: set {var_name}={value}"
+                    )
+                    return True
+                logger.warning(
+                    f"Klipper printer {self.printer_id}: failed to set {var_name}, "
+                    f"status {resp.status_code}: {resp.text[:200]}"
+                )
+        except Exception as e:
+            logger.error(
+                f"Klipper printer {self.printer_id}: error setting {var_name}: {e}"
+            )
+        return False

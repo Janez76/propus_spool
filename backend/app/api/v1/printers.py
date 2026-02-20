@@ -403,24 +403,46 @@ async def assign_spool_to_slot(
     assignment.updated_at = dt.utcnow()
     await db.commit()
 
-    if body.spool_id is not None and spool_meta:
-        from app.plugins.manager import plugin_manager
+    from app.plugins.manager import plugin_manager
 
-        result = await db.execute(
-            select(Printer).where(Printer.id == printer_id)
-        )
-        printer_obj = result.scalar_one_or_none()
+    result = await db.execute(
+        select(Printer).where(Printer.id == printer_id)
+    )
+    printer_obj = result.scalar_one_or_none()
 
-        if printer_obj and printer_obj.driver_key == "bambu":
-            fil = spool.filament if spool else None
+    if printer_obj and printer_obj.driver_key == "bambu" and body.spool_id is not None and spool_meta:
+        fil = spool.filament if spool else None
+        await plugin_manager.send_command(printer_id, {
+            "command": "set_filament",
+            "ams_id": ams_unit.ams_unit_no,
+            "tray_id": slot_no - 1,
+            "filament_type": fil.type if fil else "PLA",
+            "color_hex": spool_meta.get("color_hex", "FFFFFFFF"),
+            "nozzle_temp_min": 190,
+            "nozzle_temp_max": 230,
+        })
+
+    if printer_obj and printer_obj.driver_key == "klipper":
+        tool_index = slot_no - 1
+        if body.spool_id is not None:
+            ext_id = spool.external_id if spool else None
+            spoolman_id = body.spool_id
+            if ext_id and ext_id.startswith("spoolman:"):
+                try:
+                    spoolman_id = int(ext_id.split(":")[1])
+                except (ValueError, IndexError):
+                    pass
             await plugin_manager.send_command(printer_id, {
-                "command": "set_filament",
-                "ams_id": ams_unit.ams_unit_no,
-                "tray_id": slot_no - 1,
-                "filament_type": fil.type if fil else "PLA",
-                "color_hex": spool_meta.get("color_hex", "FFFFFFFF"),
-                "nozzle_temp_min": 190,
-                "nozzle_temp_max": 230,
+                "command": "set_spool",
+                "tool_index": tool_index,
+                "spool_id": spoolman_id,
+            })
+            assignment.external_id = f"spoolman:{spoolman_id}"
+            await db.commit()
+        else:
+            await plugin_manager.send_command(printer_id, {
+                "command": "clear_spool",
+                "tool_index": tool_index,
             })
 
     return {"ok": True, "slot_no": slot_no, "spool_id": body.spool_id}
