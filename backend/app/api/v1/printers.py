@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/printers", tags=["printers"])
 
 _camera_cache: dict[int, tuple[bytes, float]] = {}
-CAMERA_CACHE_TTL = 5
+CAMERA_CACHE_TTL = 1
 
 
 class PrinterCreate(BaseModel):
@@ -101,6 +101,23 @@ class PrinterDetailResponse(PrinterResponse):
     slots: list[SlotResponse] = []
 
 
+class SlotStatusItem(BaseModel):
+    slot_no: int
+    present: bool = False
+    spool_id: int | None = None
+    material: str | None = None
+    color_hex: str | None = None
+    designation: str | None = None
+    remain_percent: int | None = None
+
+
+class AmsUnitStatus(BaseModel):
+    unit_no: int
+    name: str | None = None
+    slots_total: int = 4
+    slots: list[SlotStatusItem] = []
+
+
 class PrinterStatusResponse(BaseModel):
     id: int
     name: str
@@ -119,6 +136,7 @@ class PrinterStatusResponse(BaseModel):
     layer: int | None = None
     total_layers: int | None = None
     has_camera: bool = False
+    ams_units: list[AmsUnitStatus] = []
 
 
 @router.get("/status", response_model=list[PrinterStatusResponse])
@@ -129,7 +147,12 @@ async def get_printers_status(
     from app.plugins.manager import plugin_manager
 
     result = await db.execute(
-        select(Printer).where(Printer.deleted_at.is_(None), Printer.is_active == True)
+        select(Printer)
+        .where(Printer.deleted_at.is_(None), Printer.is_active == True)
+        .options(
+            selectinload(Printer.ams_units),
+            selectinload(Printer.slots).selectinload(PrinterSlot.assignment),
+        )
     )
     printers = result.scalars().all()
     all_status = plugin_manager.get_all_printer_status()
@@ -180,6 +203,63 @@ async def get_printers_status(
         if not ps:
             state = "offline"
 
+        ams_units_out: list[AmsUnitStatus] = []
+        units = sorted(p.ams_units, key=lambda u: u.ams_unit_no) if p.ams_units else []
+        slots_by_unit: dict[int | None, list] = {}
+        for s in (p.slots or []):
+            slots_by_unit.setdefault(s.ams_unit_id, []).append(s)
+
+        if units:
+            for unit in units:
+                unit_slots = sorted(slots_by_unit.get(unit.id, []), key=lambda s: s.slot_no)
+                slot_items: list[SlotStatusItem] = []
+                for s in unit_slots:
+                    a = s.assignment
+                    meta = (a.meta or {}) if a else {}
+                    color_raw = meta.get("color_hex", "")
+                    color_hex = f"#{color_raw[:6]}" if color_raw and len(color_raw) >= 6 else None
+                    slot_items.append(SlotStatusItem(
+                        slot_no=s.slot_no,
+                        present=a.present if a else False,
+                        spool_id=a.spool_id if a else None,
+                        material=meta.get("material") or None,
+                        color_hex=color_hex,
+                        designation=meta.get("designation") or meta.get("sub_brand") or None,
+                        remain_percent=int(meta["remain_percent"]) if meta.get("remain_percent") is not None else None,
+                    ))
+                for i in range(len(slot_items), unit.slots_total):
+                    slot_items.append(SlotStatusItem(slot_no=i + 1))
+
+                ams_units_out.append(AmsUnitStatus(
+                    unit_no=unit.ams_unit_no,
+                    name=unit.name,
+                    slots_total=unit.slots_total,
+                    slots=slot_items,
+                ))
+        else:
+            orphan_slots = sorted(slots_by_unit.get(None, []), key=lambda s: s.slot_no)
+            if orphan_slots:
+                slot_items = []
+                for s in orphan_slots:
+                    a = s.assignment
+                    meta = (a.meta or {}) if a else {}
+                    color_raw = meta.get("color_hex", "")
+                    color_hex = f"#{color_raw[:6]}" if color_raw and len(color_raw) >= 6 else None
+                    slot_items.append(SlotStatusItem(
+                        slot_no=s.slot_no,
+                        present=a.present if a else False,
+                        spool_id=a.spool_id if a else None,
+                        material=meta.get("material") or None,
+                        color_hex=color_hex,
+                        designation=meta.get("designation") or meta.get("sub_brand") or None,
+                        remain_percent=int(meta["remain_percent"]) if meta.get("remain_percent") is not None else None,
+                    ))
+                ams_units_out.append(AmsUnitStatus(
+                    unit_no=0,
+                    slots_total=len(slot_items),
+                    slots=slot_items,
+                ))
+
         out.append(PrinterStatusResponse(
             id=p.id,
             name=p.name,
@@ -198,6 +278,7 @@ async def get_printers_status(
             layer=layer,
             total_layers=total_layers,
             has_camera=has_camera,
+            ams_units=ams_units_out,
         ).model_dump())
 
     return out

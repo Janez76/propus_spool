@@ -191,6 +191,86 @@ import Layout from '../layouts/Layout.astro'
       font-size: 0.85rem;
       gap: 8px;
     }
+
+    .mon-ams {
+      margin-top: 14px;
+      border-top: 1px solid var(--border-subtle);
+      padding-top: 12px;
+    }
+    .mon-ams-title {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .mon-ams-title span {
+      font-size: 0.65rem;
+      opacity: 0.7;
+    }
+    .mon-slots {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+      gap: 6px;
+    }
+    .mon-slot {
+      background: var(--bg);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 8px 6px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .mon-slot.filled { border-color: var(--border); }
+    .mon-slot-color {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+    }
+    .mon-slot-no {
+      font-size: 0.6rem;
+      color: var(--text-muted);
+      margin-bottom: 2px;
+    }
+    .mon-slot-material {
+      font-size: 0.72rem;
+      font-weight: 600;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .mon-slot-name {
+      font-size: 0.6rem;
+      color: var(--text-muted);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      margin-top: 1px;
+    }
+    .mon-slot-pct {
+      font-size: 0.62rem;
+      font-family: var(--font-mono);
+      margin-top: 2px;
+    }
+    .mon-slot-empty {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      opacity: 0.5;
+    }
+    .mon-slot-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+      border: 1px solid var(--border);
+      margin-bottom: 2px;
+    }
   </style>
 
   <div class="mon-header">
@@ -237,20 +317,46 @@ import Layout from '../layouts/Layout.astro'
       return card
     }
 
+    function renderAmsHtml(p: any): string {
+      const units = p.ams_units || []
+      if (units.length === 0) return ''
+      return units.map((u: any) => {
+        const title = p.driver_key === 'klipper' ? 'Spulenhalter' : (u.name || `AMS #${u.unit_no}`)
+        const activeCount = (u.slots || []).filter((s: any) => s.present).length
+        const slotsHtml = (u.slots || []).map((s: any) => {
+          if (!s.present) {
+            return `<div class="mon-slot"><div class="mon-slot-no">${s.slot_no}</div><div class="mon-slot-empty">Leer</div></div>`
+          }
+          const colorBar = s.color_hex ? `<div class="mon-slot-color" style="background: ${s.color_hex};"></div>` : ''
+          const dotStyle = s.color_hex ? `background: ${s.color_hex};` : ''
+          return `<div class="mon-slot filled">
+            ${colorBar}
+            <div class="mon-slot-no">${s.slot_no}</div>
+            <div class="mon-slot-dot" style="${dotStyle}"></div>
+            <div class="mon-slot-material">${s.material || '?'}</div>
+            ${s.designation ? `<div class="mon-slot-name">${s.designation}</div>` : ''}
+            ${s.remain_percent != null ? `<div class="mon-slot-pct">${s.remain_percent}%</div>` : ''}
+          </div>`
+        }).join('')
+        return `<div class="mon-ams"><div class="mon-ams-title">${title} <span>${activeCount}/${u.slots_total} belegt</span></div><div class="mon-slots">${slotsHtml}</div></div>`
+      }).join('')
+    }
+
     function monRenderCard(card: HTMLElement, p: any) {
       const dotColor = STATE_COLORS[p.state] || '#6b7280'
       const label = STATE_LABELS[p.state] || p.state
       const badgeCls = p.state || 'offline'
       const active = monIsActive(p.state)
+      const amsHtml = renderAmsHtml(p)
 
       let bodyHtml: string
       if (!active) {
-        bodyHtml = `<div class="mon-idle-body"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" opacity="0.4"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>Kein aktiver Druck</div>`
+        bodyHtml = `<div class="mon-idle-body" style="flex-direction: column; gap: 4px;"><div style="display: flex; align-items: center; gap: 8px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" opacity="0.4"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>Kein aktiver Druck</div></div>${amsHtml ? `<div style="padding: 0 16px 16px;">${amsHtml}</div>` : ''}`
       } else {
         const pct = p.progress_pct ?? 0
         const camHtml = p.has_camera
           ? `<div class="mon-camera-wrap"><img class="mon-camera" data-cam="${p.id}" src="/api/v1/printers/${p.id}/camera?t=${Date.now()}" alt="Kamera" onerror="this.style.display='none'" /></div>`
-          : `<div class="mon-camera-wrap"><div class="mon-no-camera"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" opacity="0.4"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Keine Kamera</div></div>`
+          : ''
 
         bodyHtml = `
           <div class="mon-card-body">
@@ -267,6 +373,7 @@ import Layout from '../layouts/Layout.astro'
               ${p.remaining_min != null ? `<div class="mon-stat"><div class="mon-stat-label">Restzeit</div><div class="mon-stat-val" data-f="remain">${fmtMin(p.remaining_min)}</div></div>` : (p.elapsed_min != null ? `<div class="mon-stat"><div class="mon-stat-label">Vergangen</div><div class="mon-stat-val" data-f="elapsed">${fmtMin(p.elapsed_min)}</div></div>` : '')}
               ${(p.layer != null && p.total_layers != null) ? `<div class="mon-stat"><div class="mon-stat-label">Layer</div><div class="mon-stat-val" data-f="layer">${p.layer}/${p.total_layers}</div></div>` : ''}
             </div>
+            ${amsHtml}
           </div>`
       }
 
@@ -347,5 +454,12 @@ import Layout from '../layouts/Layout.astro'
 
     loadMonitoring()
     setInterval(loadMonitoring, 3000)
+
+    setInterval(() => {
+      document.querySelectorAll<HTMLImageElement>('img[data-cam]').forEach(img => {
+        const pid = img.getAttribute('data-cam')
+        if (pid) img.src = `/api/v1/printers/${pid}/camera?t=${Date.now()}`
+      })
+    }, 1500)
   </script>
 </Layout>

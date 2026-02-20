@@ -1523,6 +1523,12 @@ interface PaginatedResponse<T> {
     function startPrinterMonitor() {
       loadPrinterMonitor()
       printerMonitorInterval = setInterval(loadPrinterMonitor, 5000)
+      setInterval(() => {
+        document.querySelectorAll<HTMLImageElement>('img[data-cam-id]').forEach(img => {
+          const pid = img.getAttribute('data-cam-id')
+          if (pid) img.src = `/api/v1/printers/${pid}/camera?t=${Date.now()}`
+        })
+      }, 2000)
     }
 
     // ── Init ───────────────────────────────────────────────────────
