@@ -342,6 +342,8 @@
     "unitNamePlaceholder": "e.g. Left AMS",
     "numberOfSlots": "Number of Slots *",
     "failedAddAms": "Failed to add AMS unit",
+    "confirmDeleteAms": "Are you sure you want to delete this AMS unit? All associated slots will be removed.",
+    "failedDeleteAms": "Failed to delete AMS unit",
     "adding": "Adding...",
     "amsUnitLabel": "AMS Unit {no}",
     "unitLabel": "Unit #{no}",

@@ -255,6 +255,31 @@ async def create_ams_unit(
     return ams_unit
 
 
+@router.delete("/{printer_id}/ams-units/{unit_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_ams_unit(
+    printer_id: int,
+    unit_id: int,
+    db: DBSession = None,
+    principal=RequirePermission("printers:update"),
+):
+    result = await db.execute(
+        select(PrinterAmsUnit).where(
+            PrinterAmsUnit.id == unit_id,
+            PrinterAmsUnit.printer_id == printer_id,
+        )
+    )
+    ams_unit = result.scalar_one_or_none()
+
+    if not ams_unit:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": "not_found", "message": "AMS unit not found"},
+        )
+
+    await db.delete(ams_unit)
+    await db.commit()
+
+
 @router.get("/{printer_id}/ams-units", response_model=list[AmsUnitResponse])
 async def list_ams_units(
     printer_id: int,

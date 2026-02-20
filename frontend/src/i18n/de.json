@@ -343,6 +343,8 @@
     "unitNamePlaceholder": "z.B. Linkes AMS",
     "numberOfSlots": "Anzahl Slots *",
     "failedAddAms": "AMS-Einheit konnte nicht hinzugefügt werden",
+    "confirmDeleteAms": "Möchten Sie diese AMS-Einheit wirklich löschen? Alle zugehörigen Slots werden entfernt.",
+    "failedDeleteAms": "AMS-Einheit konnte nicht gelöscht werden",
     "adding": "Hinzufügen...",
     "amsUnitLabel": "AMS-Einheit {no}",
     "unitLabel": "Einheit #{no}",

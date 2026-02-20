@@ -256,15 +256,41 @@ const { id } = Astro.params
                 <h3 style="font-weight: 600;">${unit.name || t('printers.amsUnitLabel', { no: unit.ams_unit_no })}</h3>
                 <p style="font-size: 0.85rem; color: var(--text-muted);">${t('printers.unitLabel', { no: unit.ams_unit_no })} · ${t('printers.slots', { count: unit.slots_total })}</p>
               </div>
-              <span style="padding: 2px 8px; font-size: 0.75rem; border-radius: 999px; background: var(--bg-soft); ${unit.is_active ? 'color: var(--accent-2);' : 'color: var(--error-text);'}">
-                ${unit.is_active ? t('common.active') : t('common.inactive')}
-              </span>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <span style="padding: 2px 8px; font-size: 0.75rem; border-radius: 999px; background: var(--bg-soft); ${unit.is_active ? 'color: var(--accent-2);' : 'color: var(--error-text);'}">
+                  ${unit.is_active ? t('common.active') : t('common.inactive')}
+                </span>
+                <button class="fm-btn fm-btn-danger btn-delete-ams" data-unit-id="${unit.id}" style="font-size: 0.7rem; padding: 2px 8px;">
+                  ${t('common.delete')}
+                </button>
+              </div>
             </div>
             <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
               ${slotCards}
             </div>
           </div>`
       }).join('')
+
+      container.querySelectorAll('.btn-delete-ams').forEach((btn: Element) => {
+        btn.addEventListener('click', async () => {
+          const unitId = (btn as HTMLElement).dataset.unitId
+          if (!(await (window as any).__fmConfirm(t('printers.confirmDeleteAms')))) return
+          try {
+            const response = await fetch(`/api/v1/printers/${id}/ams-units/${unitId}`, {
+              method: 'DELETE',
+              headers: { 'X-CSRF-Token': getCsrfToken() },
+              credentials: 'include',
+            })
+            if (response.ok) {
+              loadPrinter()
+            } else {
+              await (window as any).__fmAlert(t('printers.failedDeleteAms'))
+            }
+          } catch {
+            await (window as any).__fmAlert(t('printers.failedDeleteAms'))
+          }
+        })
+      })
     }
     
     document.getElementById('btn-add-ams')?.addEventListener('click', () => {
