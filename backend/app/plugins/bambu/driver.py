@@ -34,6 +34,9 @@ class Driver(BaseDriver):
         self._mqtt_client: mqtt.Client | None = None
         self._loop: asyncio.AbstractEventLoop | None = None
         self._last_ams_hash: str | None = None
+        self._print_state: dict[str, Any] = {}
+        self._camera_snapshot: bytes | None = None
+        self._camera_ts: float = 0
 
     def validate_config(self) -> None:
         host = self.config.get("host")
@@ -73,7 +76,19 @@ class Driver(BaseDriver):
             "printer_id": self.printer_id,
             "running": self._running,
             "mqtt_connected": connected,
+            "print_state": dict(self._print_state),
         }
+
+    def get_camera_config(self) -> dict[str, str] | None:
+        host = self.config.get("host")
+        access_code = self.config.get("access_code")
+        if host and access_code:
+            return {
+                "url": f"rtsps://{host}/streaming/live/1",
+                "user": MQTT_USERNAME,
+                "password": access_code,
+            }
+        return None
 
     # ------------------------------------------------------------------ #
     #  Send commands to printer
@@ -187,7 +202,13 @@ class Driver(BaseDriver):
         except (json.JSONDecodeError, UnicodeDecodeError):
             return
 
-        ams_data = payload.get("print", {}).get("ams")
+        print_data = payload.get("print", {})
+        if not print_data:
+            return
+
+        self._update_print_state(print_data)
+
+        ams_data = print_data.get("ams")
         if not ams_data:
             return
 
@@ -216,6 +237,27 @@ class Driver(BaseDriver):
                 self.emit(event)
         except Exception as e:
             logger.error(f"Failed to emit ams_state for printer {self.printer_id}: {e}")
+
+    def _update_print_state(self, print_data: dict[str, Any]) -> None:
+        """Extract print job status fields from Bambu MQTT payload."""
+        field_map = {
+            "gcode_state": "gcode_state",
+            "subtask_name": "subtask_name",
+            "gcode_file": "gcode_file",
+            "mc_percent": "mc_percent",
+            "mc_remaining_time": "mc_remaining_time",
+            "nozzle_temper": "nozzle_temper",
+            "nozzle_target_temper": "nozzle_target_temper",
+            "bed_temper": "bed_temper",
+            "bed_target_temper": "bed_target_temper",
+            "layer_num": "layer_num",
+            "total_layer_num": "total_layer_num",
+            "mc_print_stage": "mc_print_stage",
+        }
+        for src_key, dst_key in field_map.items():
+            val = print_data.get(src_key)
+            if val is not None:
+                self._print_state[dst_key] = val
 
     # ------------------------------------------------------------------ #
     #  Parse Bambu AMS data into Propus Spool event format

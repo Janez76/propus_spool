@@ -1,4 +1,12 @@
+import asyncio
+import logging
+import subprocess
+import tempfile
+import time
+from pathlib import Path
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import Response
 from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
@@ -7,7 +15,12 @@ from app.api.deps import DBSession, PrincipalDep, RequirePermission
 from app.api.v1.schemas import PaginatedResponse
 from app.models import Filament, FilamentColor, Color, Location, Printer, PrinterAmsUnit, PrinterSlot, PrinterSlotAssignment, Spool
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/printers", tags=["printers"])
+
+_camera_cache: dict[int, tuple[bytes, float]] = {}
+CAMERA_CACHE_TTL = 5
 
 
 class PrinterCreate(BaseModel):
@@ -86,6 +99,181 @@ class PrinterDetailResponse(PrinterResponse):
     driver_config: dict | None = None
     ams_units: list[AmsUnitResponse] = []
     slots: list[SlotResponse] = []
+
+
+class PrinterStatusResponse(BaseModel):
+    id: int
+    name: str
+    model: str | None = None
+    driver_key: str
+    is_active: bool
+    state: str = "offline"
+    job_name: str | None = None
+    progress_pct: int | None = None
+    remaining_min: int | None = None
+    elapsed_min: int | None = None
+    nozzle_temp: float | None = None
+    nozzle_target: float | None = None
+    bed_temp: float | None = None
+    bed_target: float | None = None
+    layer: int | None = None
+    total_layers: int | None = None
+    has_camera: bool = False
+
+
+@router.get("/status", response_model=list[PrinterStatusResponse])
+async def get_printers_status(
+    db: DBSession,
+    principal: PrincipalDep,
+):
+    from app.plugins.manager import plugin_manager
+
+    result = await db.execute(
+        select(Printer).where(Printer.deleted_at.is_(None), Printer.is_active == True)
+    )
+    printers = result.scalars().all()
+    all_status = plugin_manager.get_all_printer_status()
+
+    out: list[dict] = []
+    for p in printers:
+        ps = all_status.get(p.id, {})
+        has_camera = plugin_manager.get_camera_config(p.id) is not None
+
+        if p.driver_key == "bambu":
+            gcode_state = ps.get("gcode_state", "IDLE")
+            state_map = {"RUNNING": "printing", "PAUSE": "paused", "FAILED": "error", "FINISH": "idle", "IDLE": "idle", "PREPARE": "preparing"}
+            state = state_map.get(gcode_state, "idle")
+            job = ps.get("subtask_name") or ps.get("gcode_file") or None
+            progress = ps.get("mc_percent")
+            remaining = ps.get("mc_remaining_time")
+            nozzle = ps.get("nozzle_temper")
+            nozzle_t = ps.get("nozzle_target_temper")
+            bed = ps.get("bed_temper")
+            bed_t = ps.get("bed_target_temper")
+            layer = ps.get("layer_num")
+            total_layers = ps.get("total_layer_num")
+            elapsed = None
+        elif p.driver_key == "klipper":
+            kstate = ps.get("state", "standby")
+            state_map = {"printing": "printing", "paused": "paused", "error": "error", "complete": "idle", "standby": "idle", "cancelled": "idle"}
+            state = state_map.get(kstate, "idle")
+            job = ps.get("filename") or None
+            progress = ps.get("progress")
+            dur = ps.get("print_duration", 0)
+            elapsed = round(dur / 60) if dur else None
+            remaining = None
+            nozzle = ps.get("nozzle_temp")
+            nozzle_t = ps.get("nozzle_target")
+            bed = ps.get("bed_temp")
+            bed_t = ps.get("bed_target")
+            layer = None
+            total_layers = None
+        else:
+            state = "offline"
+            job = None
+            progress = None
+            remaining = None
+            elapsed = None
+            nozzle = nozzle_t = bed = bed_t = None
+            layer = total_layers = None
+
+        if not ps:
+            state = "offline"
+
+        out.append(PrinterStatusResponse(
+            id=p.id,
+            name=p.name,
+            model=p.model,
+            driver_key=p.driver_key,
+            is_active=p.is_active,
+            state=state,
+            job_name=job,
+            progress_pct=int(progress) if progress is not None else None,
+            remaining_min=int(remaining) if remaining is not None else None,
+            elapsed_min=elapsed,
+            nozzle_temp=round(nozzle, 1) if nozzle is not None else None,
+            nozzle_target=round(nozzle_t, 1) if nozzle_t is not None else None,
+            bed_temp=round(bed, 1) if bed is not None else None,
+            bed_target=round(bed_t, 1) if bed_t is not None else None,
+            layer=layer,
+            total_layers=total_layers,
+            has_camera=has_camera,
+        ).model_dump())
+
+    return out
+
+
+@router.get("/{printer_id}/camera")
+async def get_camera_snapshot(
+    printer_id: int,
+    db: DBSession,
+    principal: PrincipalDep,
+):
+    from app.plugins.manager import plugin_manager
+
+    cam = plugin_manager.get_camera_config(printer_id)
+    if not cam:
+        raise HTTPException(status_code=404, detail="No camera available for this printer")
+
+    now = time.time()
+    cached = _camera_cache.get(printer_id)
+    if cached and (now - cached[1]) < CAMERA_CACHE_TTL:
+        return Response(content=cached[0], media_type="image/jpeg")
+
+    url = cam["url"]
+    user = cam.get("user", "")
+    password = cam.get("password", "")
+
+    try:
+        jpeg_bytes = await asyncio.get_event_loop().run_in_executor(
+            None, _grab_rtsp_frame, url, user, password
+        )
+        if jpeg_bytes:
+            _camera_cache[printer_id] = (jpeg_bytes, now)
+            return Response(content=jpeg_bytes, media_type="image/jpeg")
+    except Exception as e:
+        logger.warning(f"Camera snapshot failed for printer {printer_id}: {e}")
+
+    raise HTTPException(status_code=503, detail="Camera snapshot unavailable")
+
+
+def _grab_rtsp_frame(url: str, user: str, password: str) -> bytes | None:
+    """Use ffmpeg to grab a single JPEG frame from RTSP stream."""
+    rtsp_url = url
+    if user and password:
+        proto, rest = url.split("://", 1)
+        rtsp_url = f"{proto}://{user}:{password}@{rest}"
+
+    with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
+        tmp_path = tmp.name
+
+    try:
+        result = subprocess.run(
+            [
+                "ffmpeg", "-y",
+                "-rtsp_transport", "tcp",
+                "-i", rtsp_url,
+                "-frames:v", "1",
+                "-q:v", "2",
+                tmp_path,
+            ],
+            capture_output=True,
+            timeout=10,
+        )
+        if result.returncode == 0:
+            data = Path(tmp_path).read_bytes()
+            if data:
+                return data
+    except subprocess.TimeoutExpired:
+        logger.warning("ffmpeg RTSP snapshot timed out")
+    except FileNotFoundError:
+        logger.warning("ffmpeg not found – camera snapshots disabled")
+    finally:
+        try:
+            Path(tmp_path).unlink(missing_ok=True)
+        except Exception:
+            pass
+    return None
 
 
 @router.get("", response_model=PaginatedResponse[PrinterResponse])

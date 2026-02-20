@@ -388,27 +388,132 @@ interface PaginatedResponse<T> {
       white-space: nowrap;
     }
 
-    .printer-row {
+    .pm-card {
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 10px;
+      margin-bottom: 8px;
+      background: var(--bg-soft);
+      transition: border-color 0.2s ease;
+    }
+    .pm-card:last-child { margin-bottom: 0; }
+    .pm-card:hover { border-color: var(--accent); }
+    .pm-card-header {
       display: flex;
       align-items: center;
-      gap: 12px;
-      padding: 8px 0;
-      border-bottom: 1px solid var(--border-subtle);
-      cursor: pointer;
+      gap: 8px;
+      margin-bottom: 8px;
     }
-    .printer-row:last-child { border-bottom: none; }
-    .printer-row:hover { opacity: 0.8; }
-    .printer-dot {
+    .pm-status-dot {
       width: 8px;
       height: 8px;
       border-radius: 50%;
       flex-shrink: 0;
     }
-    .printer-slots {
-      font-size: 0.75rem;
+    .pm-name {
+      font-weight: 600;
+      font-size: 0.82rem;
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .pm-badge {
+      font-size: 0.65rem;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      flex-shrink: 0;
+    }
+    .pm-badge.printing { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+    .pm-badge.idle { background: rgba(107, 114, 128, 0.15); color: #6b7280; }
+    .pm-badge.paused { background: rgba(251, 191, 36, 0.15); color: #eab308; }
+    .pm-badge.error { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+    .pm-badge.preparing { background: rgba(56, 189, 248, 0.15); color: #38bdf8; }
+    .pm-badge.offline { background: rgba(107, 114, 128, 0.1); color: #4b5563; }
+    .pm-content {
+      display: flex;
+      gap: 10px;
+    }
+    .pm-camera {
+      width: 120px;
+      height: 90px;
+      border-radius: var(--radius-sm);
+      object-fit: cover;
+      background: var(--bg);
+      border: 1px solid var(--border-subtle);
+      flex-shrink: 0;
+    }
+    .pm-info { flex: 1; min-width: 0; }
+    .pm-job {
+      font-size: 0.78rem;
+      font-weight: 500;
+      margin-bottom: 6px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .pm-progress-wrap {
+      margin-bottom: 6px;
+    }
+    .pm-progress-bar {
+      height: 6px;
+      background: var(--bg);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .pm-progress-fill {
+      height: 100%;
+      border-radius: 3px;
+      background: linear-gradient(90deg, #10b981, #34d399);
+      transition: width 0.5s ease;
+    }
+    .pm-progress-text {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.68rem;
       color: var(--text-muted);
-      margin-left: auto;
-      font-family: var(--font-mono);
+      margin-top: 2px;
+    }
+    .pm-temps {
+      display: flex;
+      gap: 12px;
+      font-size: 0.72rem;
+    }
+    .pm-temp-item {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .pm-temp-icon {
+      width: 12px;
+      height: 12px;
+      opacity: 0.6;
+    }
+    .pm-temp-val { font-family: var(--font-mono); font-weight: 500; }
+    .pm-temp-target { color: var(--text-muted); }
+    .pm-layer {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      margin-top: 3px;
+    }
+    .pm-idle-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 0;
+      border-bottom: 1px solid var(--border-subtle);
+      cursor: pointer;
+      font-size: 0.82rem;
+    }
+    .pm-idle-row:last-child { border-bottom: none; }
+    .pm-idle-row:hover { opacity: 0.8; }
+    @media (max-width: 480px) {
+      .pm-camera { width: 80px; height: 60px; }
+      .pm-content { gap: 8px; }
     }
   </style>
 
@@ -522,13 +627,13 @@ interface PaginatedResponse<T> {
       </div>
     </div>
 
-    <div class="widget" data-widget="printer-overview" draggable="true">
+    <div class="widget" data-widget="printer-monitor" draggable="true">
       <div class="widget-header">
-        <div class="widget-title"><span class="dot" style="background: #10b981;"></span> <span data-i18n="dashboard.printerOverview">Printers</span></div>
+        <div class="widget-title"><span class="dot" style="background: #10b981;"></span> <span>Drucker Monitor</span></div>
         <svg class="drag-handle" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg>
       </div>
-      <div class="widget-body" id="printer-overview">
-        <p style="color: var(--text-muted); font-size: 0.85rem;" data-i18n="common.loading">Loading...</p>
+      <div class="widget-body" id="printer-monitor" style="max-height: none; overflow: visible;">
+        <p style="color: var(--text-muted); font-size: 0.85rem;">Laden...</p>
       </div>
     </div>
 
@@ -609,7 +714,7 @@ interface PaginatedResponse<T> {
 
     const DEFAULT_WIDGET_ORDER = [
       'spool-status', 'total-weight', 'low-stock', 'color-distribution',
-      'recent-activity', 'printer-overview', 'manufacturers', 'filament-types',
+      'recent-activity', 'printer-monitor', 'manufacturers', 'filament-types',
       'location-stats', 'filament-stats'
     ]
 
@@ -619,7 +724,7 @@ interface PaginatedResponse<T> {
       'low-stock': 'Low Stock',
       'color-distribution': 'Color Distribution',
       'recent-activity': 'Recent Activity',
-      'printer-overview': 'Printers',
+      'printer-monitor': 'Drucker Monitor',
       'manufacturers': 'Manufacturers',
       'filament-types': 'Filament Types',
       'location-stats': 'Locations',
@@ -1162,23 +1267,7 @@ interface PaginatedResponse<T> {
             }).join('')
           }
 
-          // ── Widget: Printer Overview ─────────────────────────────
-          const printerContainer = document.getElementById('printer-overview')!
-          const printers = dashboardData.printer_overview || []
-          if (printers.length === 0) {
-            printerContainer.innerHTML = `<p style="color: var(--text-muted); font-size: 0.85rem;">${t('dashboard.noData')}</p>`
-          } else {
-            printerContainer.innerHTML = printers.map((p: any) => `
-              <div class="printer-row" onclick="window.location.href='/printers/${p.id}'">
-                <span class="printer-dot" style="background: ${p.is_active ? '#22c55e' : '#6b7280'};"></span>
-                <div style="flex: 1; min-width: 0;">
-                  <div style="font-weight: 500; font-size: 0.85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${p.name}</div>
-                  <div style="font-size: 0.7rem; color: var(--text-muted);">${p.model || p.driver_key}</div>
-                </div>
-                <span class="printer-slots">${p.loaded_spools}/${p.slot_count}</span>
-              </div>
-            `).join('')
-          }
+          // Printer overview is now handled by printer monitor polling
 
           // ── Widget: Location Stats ───────────────────────────────
           const locationStatsContainer = document.getElementById('location-stats')!
@@ -1275,6 +1364,113 @@ interface PaginatedResponse<T> {
       }
     }
 
+    // ── Printer Monitor ──────────────────────────────────────────
+    function formatMinutes(min: number | null | undefined): string {
+      if (min == null || min <= 0) return '--'
+      const h = Math.floor(min / 60)
+      const m = min % 60
+      return h > 0 ? `${h}h ${m}m` : `${m}m`
+    }
+
+    function renderPrinterCard(p: any): string {
+      const stateColors: Record<string, string> = {
+        printing: '#10b981', idle: '#6b7280', paused: '#eab308',
+        error: '#ef4444', preparing: '#38bdf8', offline: '#4b5563'
+      }
+      const stateLabels: Record<string, string> = {
+        printing: 'Druckt', idle: 'Bereit', paused: 'Pause',
+        error: 'Fehler', preparing: 'Vorbereitung', offline: 'Offline'
+      }
+      const dotColor = stateColors[p.state] || '#6b7280'
+      const badgeClass = p.state || 'offline'
+      const stateLabel = stateLabels[p.state] || p.state
+
+      if (p.state !== 'printing' && p.state !== 'paused' && p.state !== 'preparing') {
+        return `
+          <div class="pm-idle-row" onclick="window.location.href='/printers/${p.id}'">
+            <span class="pm-status-dot" style="background: ${dotColor};"></span>
+            <span class="pm-name">${p.name}</span>
+            <span class="pm-badge ${badgeClass}">${stateLabel}</span>
+          </div>`
+      }
+
+      const cameraHtml = p.has_camera ? `<img class="pm-camera" src="/api/v1/printers/${p.id}/camera?t=${Date.now()}" alt="Camera" onerror="this.style.display='none'" />` : ''
+      const progressPct = p.progress_pct ?? 0
+      const layerHtml = (p.layer != null && p.total_layers != null) ? `<div class="pm-layer">Layer ${p.layer} / ${p.total_layers}</div>` : ''
+
+      return `
+        <div class="pm-card" onclick="window.location.href='/monitoring'" style="cursor: pointer;">
+          <div class="pm-card-header">
+            <span class="pm-status-dot" style="background: ${dotColor};"></span>
+            <span class="pm-name">${p.name}</span>
+            <span class="pm-badge ${badgeClass}">${stateLabel}</span>
+          </div>
+          <div class="pm-content">
+            ${cameraHtml}
+            <div class="pm-info">
+              <div class="pm-job">${p.job_name || 'Unbekannt'}</div>
+              <div class="pm-progress-wrap">
+                <div class="pm-progress-bar">
+                  <div class="pm-progress-fill" style="width: ${progressPct}%;"></div>
+                </div>
+                <div class="pm-progress-text">
+                  <span>${progressPct}%</span>
+                  <span>${p.remaining_min != null ? formatMinutes(p.remaining_min) + ' verbleibend' : (p.elapsed_min != null ? formatMinutes(p.elapsed_min) + ' vergangen' : '')}</span>
+                </div>
+              </div>
+              <div class="pm-temps">
+                ${p.nozzle_temp != null ? `
+                  <div class="pm-temp-item">
+                    <svg class="pm-temp-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg>
+                    <span class="pm-temp-val">${p.nozzle_temp}°</span>
+                    ${p.nozzle_target ? `<span class="pm-temp-target">/${p.nozzle_target}°</span>` : ''}
+                  </div>` : ''}
+                ${p.bed_temp != null ? `
+                  <div class="pm-temp-item">
+                    <svg class="pm-temp-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/></svg>
+                    <span class="pm-temp-val">${p.bed_temp}°</span>
+                    ${p.bed_target ? `<span class="pm-temp-target">/${p.bed_target}°</span>` : ''}
+                  </div>` : ''}
+              </div>
+              ${layerHtml}
+            </div>
+          </div>
+        </div>`
+    }
+
+    async function loadPrinterMonitor() {
+      try {
+        const res = await fetch('/api/v1/printers/status', { credentials: 'include' })
+        if (!res.ok) return
+        const printers = await res.json()
+        const container = document.getElementById('printer-monitor')
+        if (!container) return
+
+        if (printers.length === 0) {
+          container.innerHTML = '<p style="color: var(--text-muted); font-size: 0.85rem;">Keine Drucker</p>'
+          return
+        }
+
+        const active = printers.filter((p: any) => p.state === 'printing' || p.state === 'paused' || p.state === 'preparing')
+        const idle = printers.filter((p: any) => p.state !== 'printing' && p.state !== 'paused' && p.state !== 'preparing')
+
+        let html = active.map((p: any) => renderPrinterCard(p)).join('')
+        if (idle.length > 0) {
+          html += idle.map((p: any) => renderPrinterCard(p)).join('')
+        }
+        container.innerHTML = html
+      } catch (e) {
+        console.debug('Printer monitor fetch error:', e)
+      }
+    }
+
+    let printerMonitorInterval: ReturnType<typeof setInterval> | null = null
+
+    function startPrinterMonitor() {
+      loadPrinterMonitor()
+      printerMonitorInterval = setInterval(loadPrinterMonitor, 5000)
+    }
+
     // ── Init ───────────────────────────────────────────────────────
     async function init() {
       try {
@@ -1283,7 +1479,7 @@ interface PaginatedResponse<T> {
         WIDGET_NAMES['low-stock'] = t('dashboard.lowStockSpools')
         WIDGET_NAMES['color-distribution'] = t('dashboard.colorDistribution')
         WIDGET_NAMES['recent-activity'] = t('dashboard.recentActivity')
-        WIDGET_NAMES['printer-overview'] = t('dashboard.printerOverview')
+        WIDGET_NAMES['printer-monitor'] = 'Drucker Monitor'
         WIDGET_NAMES['manufacturers'] = t('dashboard.manufacturersWithSpools')
         WIDGET_NAMES['filament-types'] = t('dashboard.filamentTypes')
         WIDGET_NAMES['location-stats'] = t('dashboard.locationStats')
@@ -1293,6 +1489,7 @@ interface PaginatedResponse<T> {
         applyWidgetVisibility()
         setupDragAndDrop()
         await loadDashboardData()
+        startPrinterMonitor()
       } catch (err) {
         console.error('Dashboard init failed:', err)
         document.querySelector('.widget-grid')!.insertAdjacentHTML('afterbegin',

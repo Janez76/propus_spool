@@ -233,5 +233,25 @@ class PluginManager:
             self.health_status[printer_id] = driver.health()
         return self.health_status
 
+    def get_printer_status(self, printer_id: int) -> dict[str, Any]:
+        driver = self.drivers.get(printer_id)
+        if not driver:
+            return {}
+        h = driver.health()
+        return h.get("print_state", {})
+
+    def get_all_printer_status(self) -> dict[int, dict[str, Any]]:
+        result: dict[int, dict[str, Any]] = {}
+        for pid, driver in self.drivers.items():
+            h = driver.health()
+            result[pid] = h.get("print_state", {})
+        return result
+
+    def get_camera_config(self, printer_id: int) -> dict[str, str] | None:
+        driver = self.drivers.get(printer_id)
+        if driver and hasattr(driver, "get_camera_config"):
+            return driver.get_camera_config()
+        return None
+
 
 plugin_manager = PluginManager()

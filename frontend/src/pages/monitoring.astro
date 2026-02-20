@@ -1,0 +1,335 @@
+---
+import Layout from '../layouts/Layout.astro'
+---
+
+<Layout title="Propus Spool - Monitoring">
+  <style>
+    .mon-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .mon-header h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin: 0;
+    }
+    .mon-refresh-info {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .mon-pulse {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+      animation: pulse-ring 2s ease-out infinite;
+    }
+    @keyframes pulse-ring {
+      0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+      70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+    .mon-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+      gap: 16px;
+    }
+    @media (max-width: 520px) {
+      .mon-grid { grid-template-columns: 1fr; }
+      .mon-header h1 { font-size: 1.2rem; }
+    }
+
+    .mon-card {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      transition: all 0.2s ease;
+    }
+    .mon-card:hover {
+      border-color: var(--accent);
+      box-shadow: var(--shadow-sm);
+    }
+    .mon-card-head {
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .mon-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .mon-card-name {
+      font-weight: 600;
+      font-size: 0.95rem;
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .mon-card-model {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+    .mon-badge {
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .mon-badge.printing { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+    .mon-badge.idle { background: rgba(107, 114, 128, 0.15); color: #6b7280; }
+    .mon-badge.paused { background: rgba(251, 191, 36, 0.15); color: #eab308; }
+    .mon-badge.error { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+    .mon-badge.preparing { background: rgba(56, 189, 248, 0.15); color: #38bdf8; }
+    .mon-badge.offline { background: rgba(107, 114, 128, 0.1); color: #4b5563; }
+
+    .mon-card-body {
+      padding: 16px;
+    }
+    .mon-camera-wrap {
+      position: relative;
+      margin-bottom: 14px;
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      background: var(--bg);
+      border: 1px solid var(--border-subtle);
+    }
+    .mon-camera {
+      width: 100%;
+      height: auto;
+      max-height: 300px;
+      object-fit: contain;
+      display: block;
+    }
+    .mon-no-camera {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 120px;
+      color: var(--text-muted);
+      font-size: 0.82rem;
+      gap: 8px;
+    }
+    .mon-job {
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 10px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .mon-progress-bar {
+      height: 10px;
+      background: var(--bg-soft);
+      border-radius: 5px;
+      overflow: hidden;
+      margin-bottom: 4px;
+    }
+    .mon-progress-fill {
+      height: 100%;
+      border-radius: 5px;
+      background: linear-gradient(90deg, #10b981, #34d399);
+      transition: width 0.5s ease;
+    }
+    .mon-progress-text {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+    }
+    .mon-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+      gap: 10px;
+    }
+    .mon-stat {
+      background: var(--bg-soft);
+      border-radius: var(--radius-sm);
+      padding: 10px;
+      text-align: center;
+    }
+    .mon-stat-label {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 4px;
+    }
+    .mon-stat-val {
+      font-size: 1rem;
+      font-weight: 700;
+      font-family: var(--font-mono);
+    }
+    .mon-stat-sub {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      margin-top: 1px;
+    }
+
+    .mon-idle-body {
+      padding: 20px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      gap: 8px;
+    }
+  </style>
+
+  <div class="mon-header">
+    <h1>Drucker Monitoring</h1>
+    <div class="mon-refresh-info">
+      <div class="mon-pulse"></div>
+      <span>Live · alle 3s</span>
+    </div>
+  </div>
+
+  <div class="mon-grid" id="mon-grid">
+    <p style="color: var(--text-muted); font-size: 0.85rem; grid-column: 1/-1; text-align: center; padding: 40px 0;">Laden...</p>
+  </div>
+
+  <script>
+    const STATE_COLORS: Record<string, string> = {
+      printing: '#10b981', idle: '#6b7280', paused: '#eab308',
+      error: '#ef4444', preparing: '#38bdf8', offline: '#4b5563'
+    }
+    const STATE_LABELS: Record<string, string> = {
+      printing: 'Druckt', idle: 'Bereit', paused: 'Pause',
+      error: 'Fehler', preparing: 'Vorbereitung', offline: 'Offline'
+    }
+
+    function fmtMin(min: number | null | undefined): string {
+      if (min == null || min <= 0) return '--'
+      const h = Math.floor(min / 60)
+      const m = min % 60
+      return h > 0 ? `${h}h ${m}m` : `${m}m`
+    }
+
+    function renderMonCard(p: any): string {
+      const dotColor = STATE_COLORS[p.state] || '#6b7280'
+      const label = STATE_LABELS[p.state] || p.state
+      const badgeCls = p.state || 'offline'
+      const isActive = p.state === 'printing' || p.state === 'paused' || p.state === 'preparing'
+
+      let bodyHtml: string
+      if (!isActive) {
+        bodyHtml = `
+          <div class="mon-idle-body">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" opacity="0.4"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            Kein aktiver Druck
+          </div>`
+      } else {
+        const pct = p.progress_pct ?? 0
+        const cameraHtml = p.has_camera
+          ? `<div class="mon-camera-wrap"><img class="mon-camera" src="/api/v1/printers/${p.id}/camera?t=${Date.now()}" alt="Kamera" onerror="this.parentElement.innerHTML='<div class=\\'mon-no-camera\\'>Kamera nicht verfügbar</div>'" /></div>`
+          : `<div class="mon-camera-wrap"><div class="mon-no-camera"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" opacity="0.4"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Keine Kamera</div></div>`
+
+        const statsItems: string[] = []
+        if (p.nozzle_temp != null) {
+          statsItems.push(`
+            <div class="mon-stat">
+              <div class="mon-stat-label">Düse</div>
+              <div class="mon-stat-val">${p.nozzle_temp}°C</div>
+              ${p.nozzle_target ? `<div class="mon-stat-sub">Ziel: ${p.nozzle_target}°C</div>` : ''}
+            </div>`)
+        }
+        if (p.bed_temp != null) {
+          statsItems.push(`
+            <div class="mon-stat">
+              <div class="mon-stat-label">Bett</div>
+              <div class="mon-stat-val">${p.bed_temp}°C</div>
+              ${p.bed_target ? `<div class="mon-stat-sub">Ziel: ${p.bed_target}°C</div>` : ''}
+            </div>`)
+        }
+        if (p.remaining_min != null) {
+          statsItems.push(`
+            <div class="mon-stat">
+              <div class="mon-stat-label">Restzeit</div>
+              <div class="mon-stat-val">${fmtMin(p.remaining_min)}</div>
+            </div>`)
+        } else if (p.elapsed_min != null) {
+          statsItems.push(`
+            <div class="mon-stat">
+              <div class="mon-stat-label">Vergangen</div>
+              <div class="mon-stat-val">${fmtMin(p.elapsed_min)}</div>
+            </div>`)
+        }
+        if (p.layer != null && p.total_layers != null) {
+          statsItems.push(`
+            <div class="mon-stat">
+              <div class="mon-stat-label">Layer</div>
+              <div class="mon-stat-val">${p.layer}/${p.total_layers}</div>
+            </div>`)
+        }
+
+        bodyHtml = `
+          <div class="mon-card-body">
+            ${cameraHtml}
+            <div class="mon-job">${p.job_name || 'Unbekannter Druckjob'}</div>
+            <div class="mon-progress-bar">
+              <div class="mon-progress-fill" style="width: ${pct}%;"></div>
+            </div>
+            <div class="mon-progress-text">
+              <span>${pct}% abgeschlossen</span>
+              <span>${p.remaining_min != null ? fmtMin(p.remaining_min) + ' verbleibend' : ''}</span>
+            </div>
+            ${statsItems.length > 0 ? `<div class="mon-stats">${statsItems.join('')}</div>` : ''}
+          </div>`
+      }
+
+      return `
+        <div class="mon-card">
+          <div class="mon-card-head">
+            <span class="mon-dot" style="background: ${dotColor};"></span>
+            <span class="mon-card-name">${p.name}</span>
+            ${p.model ? `<span class="mon-card-model">${p.model}</span>` : ''}
+            <span class="mon-badge ${badgeCls}">${label}</span>
+          </div>
+          ${bodyHtml}
+        </div>`
+    }
+
+    async function loadMonitoring() {
+      try {
+        const res = await fetch('/api/v1/printers/status', { credentials: 'include' })
+        if (!res.ok) return
+        const printers = await res.json()
+        const grid = document.getElementById('mon-grid')
+        if (!grid) return
+
+        if (printers.length === 0) {
+          grid.innerHTML = '<p style="color: var(--text-muted); font-size: 0.85rem; grid-column: 1/-1; text-align: center; padding: 40px 0;">Keine Drucker konfiguriert</p>'
+          return
+        }
+
+        const active = printers.filter((p: any) => p.state === 'printing' || p.state === 'paused' || p.state === 'preparing')
+        const idle = printers.filter((p: any) => p.state !== 'printing' && p.state !== 'paused' && p.state !== 'preparing')
+        const sorted = [...active, ...idle]
+
+        grid.innerHTML = sorted.map((p: any) => renderMonCard(p)).join('')
+      } catch (e) {
+        console.debug('Monitoring fetch error:', e)
+      }
+    }
+
+    loadMonitoring()
+    setInterval(loadMonitoring, 3000)
+  </script>
+</Layout>

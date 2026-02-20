@@ -31,6 +31,7 @@ class Driver(BaseDriver):
         self._printer_state: str = "unknown"
         self._initial_state_sent = False
         self._last_slot_spools: dict[int, int | None] = {}
+        self._print_state: dict[str, Any] = {}
 
     def validate_config(self) -> None:
         host = self.config.get("host")
@@ -60,6 +61,7 @@ class Driver(BaseDriver):
             "printer_id": self.printer_id,
             "running": self._running,
             "printer_state": self._printer_state,
+            "print_state": dict(self._print_state),
         }
 
     def _emit_initial_state(self) -> None:
@@ -102,6 +104,8 @@ class Driver(BaseDriver):
                     if info:
                         self._printer_state = info.get("state", "unknown")
 
+                    await self._poll_print_status(client, host)
+
                     if slots_count > 1:
                         await self._poll_multi_spool(client, host, slots_count)
                     else:
@@ -123,6 +127,39 @@ class Driver(BaseDriver):
                 await asyncio.sleep(POLL_INTERVAL)
             except asyncio.CancelledError:
                 break
+
+    async def _poll_print_status(
+        self, client: httpx.AsyncClient, host: str
+    ) -> None:
+        """Query print_stats, extruder, heater_bed, and display_status from Moonraker."""
+        try:
+            resp = await client.get(
+                f"{host}/printer/objects/query",
+                params={"print_stats": "", "extruder": "", "heater_bed": "", "display_status": ""},
+            )
+            if resp.status_code != 200:
+                return
+            status = resp.json().get("result", {}).get("status", {})
+
+            ps = status.get("print_stats", {})
+            ext = status.get("extruder", {})
+            bed = status.get("heater_bed", {})
+            disp = status.get("display_status", {})
+
+            self._print_state = {
+                "state": ps.get("state", "standby"),
+                "filename": ps.get("filename", ""),
+                "total_duration": ps.get("total_duration", 0),
+                "print_duration": ps.get("print_duration", 0),
+                "progress": round((disp.get("progress", 0) or 0) * 100),
+                "message": disp.get("message", ""),
+                "nozzle_temp": ext.get("temperature"),
+                "nozzle_target": ext.get("target"),
+                "bed_temp": bed.get("temperature"),
+                "bed_target": bed.get("target"),
+            }
+        except Exception as e:
+            logger.debug(f"Klipper printer {self.printer_id}: print_status poll error: {e}")
 
     async def _poll_multi_spool(
         self, client: httpx.AsyncClient, host: str, slots_count: int
