@@ -1104,23 +1104,29 @@ interface PaginatedResponse<T> {
 
     // ── Init ───────────────────────────────────────────────────────
     async function init() {
-      await initI18n()
+      try {
+        await initI18n()
 
-      WIDGET_NAMES['spool-status'] = t('dashboard.spoolStatus')
-      WIDGET_NAMES['total-weight'] = t('dashboard.weightOverview')
-      WIDGET_NAMES['low-stock'] = t('dashboard.lowStockSpools')
-      WIDGET_NAMES['color-distribution'] = t('dashboard.colorDistribution')
-      WIDGET_NAMES['recent-activity'] = t('dashboard.recentActivity')
-      WIDGET_NAMES['printer-overview'] = t('dashboard.printerOverview')
-      WIDGET_NAMES['manufacturers'] = t('dashboard.manufacturersWithSpools')
-      WIDGET_NAMES['filament-types'] = t('dashboard.filamentTypes')
-      WIDGET_NAMES['location-stats'] = t('dashboard.locationStats')
-      WIDGET_NAMES['filament-stats'] = t('dashboard.filamentStats')
+        WIDGET_NAMES['spool-status'] = t('dashboard.spoolStatus')
+        WIDGET_NAMES['total-weight'] = t('dashboard.weightOverview')
+        WIDGET_NAMES['low-stock'] = t('dashboard.lowStockSpools')
+        WIDGET_NAMES['color-distribution'] = t('dashboard.colorDistribution')
+        WIDGET_NAMES['recent-activity'] = t('dashboard.recentActivity')
+        WIDGET_NAMES['printer-overview'] = t('dashboard.printerOverview')
+        WIDGET_NAMES['manufacturers'] = t('dashboard.manufacturersWithSpools')
+        WIDGET_NAMES['filament-types'] = t('dashboard.filamentTypes')
+        WIDGET_NAMES['location-stats'] = t('dashboard.locationStats')
+        WIDGET_NAMES['filament-stats'] = t('dashboard.filamentStats')
 
-      applyWidgetOrder()
-      applyWidgetVisibility()
-      setupDragAndDrop()
-      await loadDashboardData()
+        applyWidgetOrder()
+        applyWidgetVisibility()
+        setupDragAndDrop()
+        await loadDashboardData()
+      } catch (err) {
+        console.error('Dashboard init failed:', err)
+        document.querySelector('.widget-grid')!.insertAdjacentHTML('afterbegin',
+          `<div style="grid-column: 1/-1; padding: 20px; background: #1a0000; border: 1px solid #ef4444; border-radius: 8px; color: #ef4444; font-family: monospace; white-space: pre-wrap;">Dashboard Error:\n${err instanceof Error ? err.stack || err.message : String(err)}</div>`)
+      }
     }
     init()
   </script>
