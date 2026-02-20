@@ -557,8 +557,18 @@ body {
 @media (max-width: 768px) {
   .fm-sidebar-toggle { display: none !important; }
 
+  html, body {
+    height: auto !important;
+    overflow-x: hidden;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
   .fm-page {
     grid-template-columns: 1fr !important;
+    display: block !important;
+    min-height: 100vh;
+    overflow: visible !important;
   }
 
   .fm-sidebar {
@@ -607,6 +617,9 @@ body {
   .fm-page > main {
     padding: 16px !important;
     padding-top: 60px !important;
+    padding-bottom: 40px !important;
+    min-height: calc(100vh - 52px);
+    overflow: visible !important;
   }
 
   .fm-mobile-header {
