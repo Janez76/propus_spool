@@ -116,7 +116,15 @@
     "statusCritical": "Kritisch",
     "statusEmpty": "Leer",
     "customize": "Anpassen",
-    "customizeWidgets": "Dashboard Widgets"
+    "customizeWidgets": "Dashboard Widgets",
+    "totalWeight": "Gesamtgewicht",
+    "weightOverview": "Gewichtsübersicht",
+    "ofInitial": "von",
+    "activeSpools": "aktive Spulen",
+    "colorDistribution": "Farbverteilung",
+    "recentActivity": "Letzte Aktivität",
+    "printerOverview": "Drucker",
+    "noRecentActivity": "Keine aktuelle Aktivität"
   },
   "settings": {
     "title": "Einstellungen",

@@ -1,9 +1,14 @@
+from datetime import datetime
+
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import func, select
+from sqlalchemy import func, select, desc
 from pydantic import BaseModel
 
 from app.api.deps import DBSession, PrincipalDep
 from app.models import Filament, Location, Manufacturer, Spool, SpoolStatus
+from app.models.spool import SpoolEvent
+from app.models.printer import Printer
+from app.models.filament import Color, FilamentColor
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
@@ -48,6 +53,31 @@ class EmptySpool(BaseModel):
     manufacturer_name: str
 
 
+class ColorStat(BaseModel):
+    color_name: str
+    hex_code: str
+    spool_count: int
+
+
+class RecentEvent(BaseModel):
+    spool_id: int
+    event_type: str
+    event_at: datetime
+    filament_name: str | None = None
+    note: str | None = None
+    delta_weight_g: float | None = None
+
+
+class PrinterInfo(BaseModel):
+    id: int
+    name: str
+    model: str | None = None
+    driver_key: str
+    is_active: bool
+    slot_count: int
+    loaded_spools: int
+
+
 class DashboardStatsResponse(BaseModel):
     spool_distribution: dict[str, int]
     filament_stats: list[FilamentStat]
@@ -56,6 +86,12 @@ class DashboardStatsResponse(BaseModel):
     low_stock_spools: list[LowStockSpool]
     empty_spools: list[EmptySpool]
     filament_types: list[FilamentTypeCount]
+    total_weight_g: float
+    total_initial_weight_g: float
+    spool_count_active: int
+    color_distribution: list[ColorStat]
+    recent_events: list[RecentEvent]
+    printer_overview: list[PrinterInfo]
 
 
 @router.get("/stats", response_model=DashboardStatsResponse)
@@ -256,6 +292,110 @@ async def get_dashboard_stats(
         if row[2] and row[2] > 0
     ]
 
+    # Total weight aggregates
+    weight_stmt = (
+        select(
+            func.coalesce(func.sum(Spool.remaining_weight_g), 0),
+            func.coalesce(func.sum(Spool.initial_total_weight_g), 0),
+            func.count(Spool.id),
+        )
+        .join(SpoolStatus)
+        .where(Spool.deleted_at.is_(None))
+        .where(SpoolStatus.key != "archived")
+        .where(Spool.remaining_weight_g.isnot(None))
+    )
+    weight_row = (await db.execute(weight_stmt)).one()
+    total_weight_g = float(weight_row[0])
+    total_initial_weight_g = float(weight_row[1])
+    spool_count_active = int(weight_row[2])
+
+    # Color distribution
+    color_stmt = (
+        select(
+            Color.name,
+            Color.hex_code,
+            func.count(Spool.id).label("spool_count"),
+        )
+        .join(FilamentColor, FilamentColor.color_id == Color.id)
+        .join(Filament, Filament.id == FilamentColor.filament_id)
+        .join(Spool, Spool.filament_id == Filament.id)
+        .join(SpoolStatus, Spool.status_id == SpoolStatus.id)
+        .where(Spool.deleted_at.is_(None))
+        .where(SpoolStatus.key != "archived")
+        .group_by(Color.id, Color.name, Color.hex_code)
+        .order_by(func.count(Spool.id).desc())
+        .limit(limit)
+    )
+    color_result = await db.execute(color_stmt)
+    color_distribution = [
+        ColorStat(color_name=row[0], hex_code=row[1], spool_count=row[2])
+        for row in color_result.all()
+    ]
+
+    # Recent events
+    recent_stmt = (
+        select(
+            SpoolEvent.spool_id,
+            SpoolEvent.event_type,
+            SpoolEvent.event_at,
+            Filament.designation,
+            SpoolEvent.note,
+            SpoolEvent.delta_weight_g,
+        )
+        .join(Spool, SpoolEvent.spool_id == Spool.id)
+        .join(Filament, Spool.filament_id == Filament.id)
+        .where(Spool.deleted_at.is_(None))
+        .order_by(desc(SpoolEvent.event_at))
+        .limit(limit)
+    )
+    recent_result = await db.execute(recent_stmt)
+    recent_events = [
+        RecentEvent(
+            spool_id=row[0],
+            event_type=row[1],
+            event_at=row[2],
+            filament_name=row[3],
+            note=row[4],
+            delta_weight_g=float(row[5]) if row[5] is not None else None,
+        )
+        for row in recent_result.all()
+    ]
+
+    # Printer overview
+    from app.models.printer import PrinterSlot, PrinterSlotAssignment
+
+    printer_stmt = (
+        select(Printer)
+        .where(Printer.deleted_at.is_(None))
+        .order_by(Printer.name)
+    )
+    printer_result = await db.execute(printer_stmt)
+    printer_overview: list[PrinterInfo] = []
+    for printer in printer_result.scalars().all():
+        slot_stmt = (
+            select(func.count(PrinterSlot.id))
+            .where(PrinterSlot.printer_id == printer.id)
+        )
+        slot_count = (await db.execute(slot_stmt)).scalar() or 0
+
+        loaded_stmt = (
+            select(func.count(PrinterSlotAssignment.slot_id))
+            .join(PrinterSlot, PrinterSlot.id == PrinterSlotAssignment.slot_id)
+            .where(PrinterSlot.printer_id == printer.id)
+            .where(PrinterSlotAssignment.spool_id.isnot(None))
+        )
+        loaded_count = (await db.execute(loaded_stmt)).scalar() or 0
+
+        printer_overview.append(PrinterInfo(
+            id=printer.id,
+            name=printer.name,
+            model=printer.model,
+            driver_key=printer.driver_key,
+            is_active=printer.is_active,
+            slot_count=slot_count,
+            loaded_spools=loaded_count,
+        ))
+
     return DashboardStatsResponse(
         spool_distribution=spool_distribution,
         filament_stats=filament_stats,
@@ -264,4 +404,10 @@ async def get_dashboard_stats(
         low_stock_spools=low_stock_spools,
         empty_spools=empty_spools,
         filament_types=filament_types,
+        total_weight_g=total_weight_g,
+        total_initial_weight_g=total_initial_weight_g,
+        spool_count_active=spool_count_active,
+        color_distribution=color_distribution,
+        recent_events=recent_events,
+        printer_overview=printer_overview,
     )

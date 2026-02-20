@@ -72,7 +72,7 @@ interface PaginatedResponse<T> {
 
     .stat-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
       gap: 12px;
       margin-bottom: 20px;
     }
@@ -113,16 +113,26 @@ interface PaginatedResponse<T> {
       border: 1px solid var(--border);
       border-radius: var(--radius-md);
       overflow: hidden;
-      transition: opacity var(--transition);
+      transition: all 0.2s ease;
     }
     .widget.hidden-widget { display: none; }
+    .widget.drag-over {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(0, 212, 170, 0.2);
+    }
+    .widget.dragging {
+      opacity: 0.5;
+      transform: scale(0.98);
+    }
     .widget-header {
       padding: 14px 16px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       border-bottom: 1px solid var(--border-subtle);
+      cursor: grab;
     }
+    .widget-header:active { cursor: grabbing; }
     .widget-title {
       font-weight: 600;
       font-size: 0.875rem;
@@ -136,9 +146,16 @@ interface PaginatedResponse<T> {
       border-radius: 50%;
       display: inline-block;
     }
+    .drag-handle {
+      color: var(--text-muted);
+      opacity: 0.4;
+      transition: opacity var(--transition);
+      flex-shrink: 0;
+    }
+    .widget-header:hover .drag-handle { opacity: 0.8; }
     .widget-body {
       padding: 12px 16px;
-      max-height: 260px;
+      max-height: 280px;
       overflow-y: auto;
     }
 
@@ -203,6 +220,94 @@ interface PaginatedResponse<T> {
       min-width: 28px;
       transition: flex var(--transition);
     }
+
+    .weight-progress {
+      height: 8px;
+      background: var(--bg-soft);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 6px;
+    }
+    .weight-progress-fill {
+      height: 100%;
+      border-radius: 4px;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      transition: width 0.5s ease;
+    }
+
+    .color-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 0;
+      font-size: 0.8rem;
+    }
+    .color-swatch {
+      width: 18px;
+      height: 18px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .color-bar {
+      flex: 1;
+      height: 6px;
+      background: var(--bg-soft);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .color-bar-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.5s ease;
+    }
+
+    .event-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 7px 0;
+      border-bottom: 1px solid var(--border-subtle);
+      font-size: 0.8rem;
+    }
+    .event-row:last-child { border-bottom: none; }
+    .event-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+      font-size: 0.75rem;
+    }
+    .event-time {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    .printer-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border-subtle);
+      cursor: pointer;
+    }
+    .printer-row:last-child { border-bottom: none; }
+    .printer-row:hover { opacity: 0.8; }
+    .printer-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .printer-slots {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-left: auto;
+      font-family: var(--font-mono);
+    }
   </style>
 
   <!-- Header -->
@@ -252,58 +357,113 @@ interface PaginatedResponse<T> {
         <div class="stat-label" data-i18n="dashboard.emptySpools">Empty Spools</div>
       </div>
     </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background: rgba(168, 85, 247, 0.1);">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><line x1="16" y1="8" x2="2" y2="22"/><line x1="17.5" y1="15" x2="9" y2="15"/></svg>
+      </div>
+      <div>
+        <div class="stat-value" id="stat-total-weight">-</div>
+        <div class="stat-label" data-i18n="dashboard.totalWeight">Total Weight</div>
+      </div>
+    </div>
   </div>
 
   <!-- Widgets -->
   <div class="widget-grid" id="widget-grid">
-    <div class="widget" data-widget="spool-status">
+    <div class="widget" data-widget="spool-status" draggable="true">
       <div class="widget-header">
         <div class="widget-title"><span class="dot" style="background: var(--accent);"></span> <span data-i18n="dashboard.spoolStatus">Spool Status</span></div>
+        <svg class="drag-handle" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg>
       </div>
       <div class="widget-body" id="spool-status">
         <p style="color: var(--text-muted); font-size: 0.85rem;" data-i18n="common.loading">Loading...</p>
       </div>
     </div>
 
-    <div class="widget" data-widget="low-stock">
+    <div class="widget" data-widget="total-weight" draggable="true">
+      <div class="widget-header">
+        <div class="widget-title"><span class="dot" style="background: #a855f7;"></span> <span data-i18n="dashboard.weightOverview">Weight Overview</span></div>
+        <svg class="drag-handle" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg>
+      </div>
+      <div class="widget-body" id="total-weight">
+        <p style="color: var(--text-muted); font-size: 0.85rem;" data-i18n="common.loading">Loading...</p>
+      </div>
+    </div>
+
+    <div class="widget" data-widget="low-stock" draggable="true">
       <div class="widget-header">
         <div class="widget-title"><span class="dot" style="background: var(--accent-3);"></span> <span data-i18n="dashboard.lowStockSpools">Low Stock</span></div>
+        <svg class="drag-handle" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg>
       </div>
       <div class="widget-body" id="low-stock-spools">
         <p style="color: var(--text-muted); font-size: 0.85rem;" data-i18n="common.loading">Loading...</p>
       </div>
     </div>
 
-    <div class="widget" data-widget="manufacturers">
+    <div class="widget" data-widget="color-distribution" draggable="true">
+      <div class="widget-header">
+        <div class="widget-title"><span class="dot" style="background: #ec4899;"></span> <span data-i18n="dashboard.colorDistribution">Color Distribution</span></div>
+        <svg class="drag-handle" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg>
+      </div>
+      <div class="widget-body" id="color-distribution">
+        <p style="color: var(--text-muted); font-size: 0.85rem;" data-i18n="common.loading">Loading...</p>
+      </div>
+    </div>
+
+    <div class="widget" data-widget="recent-activity" draggable="true">
+      <div class="widget-header">
+        <div class="widget-title"><span class="dot" style="background: #06b6d4;"></span> <span data-i18n="dashboard.recentActivity">Recent Activity</span></div>
+        <svg class="drag-handle" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg>
+      </div>
+      <div class="widget-body" id="recent-activity">
+        <p style="color: var(--text-muted); font-size: 0.85rem;" data-i18n="common.loading">Loading...</p>
+      </div>
+    </div>
+
+    <div class="widget" data-widget="printer-overview" draggable="true">
+      <div class="widget-header">
+        <div class="widget-title"><span class="dot" style="background: #10b981;"></span> <span data-i18n="dashboard.printerOverview">Printers</span></div>
+        <svg class="drag-handle" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg>
+      </div>
+      <div class="widget-body" id="printer-overview">
+        <p style="color: var(--text-muted); font-size: 0.85rem;" data-i18n="common.loading">Loading...</p>
+      </div>
+    </div>
+
+    <div class="widget" data-widget="manufacturers" draggable="true">
       <div class="widget-header">
         <div class="widget-title"><span class="dot" style="background: var(--accent-2);"></span> <span data-i18n="dashboard.manufacturersWithSpools">Manufacturers</span></div>
+        <svg class="drag-handle" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg>
       </div>
       <div class="widget-body" id="manufacturers-with-spools">
         <p style="color: var(--text-muted); font-size: 0.85rem;" data-i18n="common.loading">Loading...</p>
       </div>
     </div>
 
-    <div class="widget" data-widget="filament-types">
+    <div class="widget" data-widget="filament-types" draggable="true">
       <div class="widget-header">
         <div class="widget-title"><span class="dot" style="background: #a78bfa;"></span> <span data-i18n="dashboard.filamentTypes">Filament Types</span></div>
+        <svg class="drag-handle" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg>
       </div>
       <div class="widget-body" id="filament-types">
         <p style="color: var(--text-muted); font-size: 0.85rem;" data-i18n="common.loading">Loading...</p>
       </div>
     </div>
 
-    <div class="widget" data-widget="location-stats">
+    <div class="widget" data-widget="location-stats" draggable="true">
       <div class="widget-header">
         <div class="widget-title"><span class="dot" style="background: #f472b6;"></span> <span data-i18n="dashboard.locationStats">Locations</span></div>
+        <svg class="drag-handle" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg>
       </div>
       <div class="widget-body" id="location-stats">
         <p style="color: var(--text-muted); font-size: 0.85rem;" data-i18n="common.loading">Loading...</p>
       </div>
     </div>
 
-    <div class="widget" data-widget="filament-stats">
+    <div class="widget" data-widget="filament-stats" draggable="true">
       <div class="widget-header">
         <div class="widget-title"><span class="dot" style="background: #fb923c;"></span> <span data-i18n="dashboard.filamentStats">Filament Stats</span></div>
+        <svg class="drag-handle" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg>
       </div>
       <div class="widget-body" id="filament-stats">
         <p style="color: var(--text-muted); font-size: 0.85rem;" data-i18n="common.loading">Loading...</p>
@@ -345,15 +505,26 @@ interface PaginatedResponse<T> {
     let allSpools: any[] = []
     let allFilaments: any[] = []
 
+    const DEFAULT_WIDGET_ORDER = [
+      'spool-status', 'total-weight', 'low-stock', 'color-distribution',
+      'recent-activity', 'printer-overview', 'manufacturers', 'filament-types',
+      'location-stats', 'filament-stats'
+    ]
+
     const WIDGET_NAMES: Record<string, string> = {
       'spool-status': 'Spool Status',
+      'total-weight': 'Weight Overview',
       'low-stock': 'Low Stock',
+      'color-distribution': 'Color Distribution',
+      'recent-activity': 'Recent Activity',
+      'printer-overview': 'Printers',
       'manufacturers': 'Manufacturers',
       'filament-types': 'Filament Types',
       'location-stats': 'Locations',
       'filament-stats': 'Filament Stats',
     }
 
+    // ── Widget visibility ──────────────────────────────────────────
     function getWidgetVisibility(): Record<string, boolean> {
       try {
         const stored = localStorage.getItem('dashboard-widgets')
@@ -378,10 +549,101 @@ interface PaginatedResponse<T> {
       })
     }
 
+    // ── Widget order (drag & drop) ─────────────────────────────────
+    function getWidgetOrder(): string[] {
+      try {
+        const stored = localStorage.getItem('dashboard-widget-order')
+        if (stored) {
+          const order = JSON.parse(stored) as string[]
+          const allKeys = new Set(DEFAULT_WIDGET_ORDER)
+          const existing = order.filter(k => allKeys.has(k))
+          const missing = DEFAULT_WIDGET_ORDER.filter(k => !existing.includes(k))
+          return [...existing, ...missing]
+        }
+      } catch {}
+      return [...DEFAULT_WIDGET_ORDER]
+    }
+
+    function saveWidgetOrder(order: string[]) {
+      localStorage.setItem('dashboard-widget-order', JSON.stringify(order))
+    }
+
+    function applyWidgetOrder() {
+      const grid = document.getElementById('widget-grid')!
+      const order = getWidgetOrder()
+      const widgets = new Map<string, Element>()
+      grid.querySelectorAll('[data-widget]').forEach(el => {
+        widgets.set(el.getAttribute('data-widget')!, el)
+      })
+      order.forEach(key => {
+        const w = widgets.get(key)
+        if (w) grid.appendChild(w)
+      })
+    }
+
+    // ── Drag & Drop ────────────────────────────────────────────────
+    let draggedWidget: HTMLElement | null = null
+
+    function setupDragAndDrop() {
+      const grid = document.getElementById('widget-grid')!
+
+      grid.querySelectorAll('.widget[draggable="true"]').forEach(widget => {
+        const el = widget as HTMLElement
+
+        el.addEventListener('dragstart', (e: DragEvent) => {
+          draggedWidget = el
+          el.classList.add('dragging')
+          e.dataTransfer!.effectAllowed = 'move'
+          e.dataTransfer!.setData('text/plain', el.dataset.widget || '')
+        })
+
+        el.addEventListener('dragend', () => {
+          el.classList.remove('dragging')
+          grid.querySelectorAll('.widget').forEach(w => w.classList.remove('drag-over'))
+          draggedWidget = null
+          const newOrder = Array.from(grid.querySelectorAll('[data-widget]')).map(
+            w => w.getAttribute('data-widget')!
+          )
+          saveWidgetOrder(newOrder)
+        })
+
+        el.addEventListener('dragover', (e: DragEvent) => {
+          e.preventDefault()
+          e.dataTransfer!.dropEffect = 'move'
+          if (draggedWidget && draggedWidget !== el) {
+            el.classList.add('drag-over')
+          }
+        })
+
+        el.addEventListener('dragleave', () => {
+          el.classList.remove('drag-over')
+        })
+
+        el.addEventListener('drop', (e: DragEvent) => {
+          e.preventDefault()
+          el.classList.remove('drag-over')
+          if (!draggedWidget || draggedWidget === el) return
+
+          const allWidgets = Array.from(grid.querySelectorAll('.widget[data-widget]'))
+          const dragIdx = allWidgets.indexOf(draggedWidget)
+          const dropIdx = allWidgets.indexOf(el)
+
+          if (dragIdx < dropIdx) {
+            el.parentNode!.insertBefore(draggedWidget, el.nextSibling)
+          } else {
+            el.parentNode!.insertBefore(draggedWidget, el)
+          }
+        })
+      })
+    }
+
+    // ── Customize panel ────────────────────────────────────────────
     function renderCustomizeList() {
       const vis = getWidgetVisibility()
+      const order = getWidgetOrder()
       const container = document.getElementById('customize-list')!
-      container.innerHTML = Object.entries(WIDGET_NAMES).map(([key, name]) => {
+      container.innerHTML = order.map(key => {
+        const name = WIDGET_NAMES[key] || key
         const isOn = vis[key] !== false
         return `
           <div class="customize-item">
@@ -403,7 +665,6 @@ interface PaginatedResponse<T> {
       })
     }
 
-    // Customize panel open/close
     const btnCustomize = document.getElementById('btn-customize')!
     const panel = document.getElementById('customize-panel')!
     const backdrop = document.getElementById('customize-backdrop')!
@@ -422,6 +683,7 @@ interface PaginatedResponse<T> {
     closeBtn.addEventListener('click', closeCustomize)
     backdrop.addEventListener('click', closeCustomize)
 
+    // ── Helpers ────────────────────────────────────────────────────
     function getFilamentName(filamentId: number): string {
       const f = allFilaments.find(fil => fil.id === filamentId)
       if (!f) return '-'
@@ -439,7 +701,25 @@ interface PaginatedResponse<T> {
       return match ? decodeURIComponent(match[1]) : ''
     }
 
-    // Modal functions
+    function timeAgo(dateStr: string): string {
+      const now = new Date()
+      const then = new Date(dateStr)
+      const diff = Math.floor((now.getTime() - then.getTime()) / 1000)
+      if (diff < 60) return `${diff}s`
+      if (diff < 3600) return `${Math.floor(diff / 60)}m`
+      if (diff < 86400) return `${Math.floor(diff / 3600)}h`
+      return `${Math.floor(diff / 86400)}d`
+    }
+
+    const EVENT_ICONS: Record<string, { icon: string; bg: string }> = {
+      weigh: { icon: '⚖', bg: 'rgba(56, 189, 248, 0.15)' },
+      status_change: { icon: '🔄', bg: 'rgba(168, 85, 247, 0.15)' },
+      location_change: { icon: '📍', bg: 'rgba(244, 114, 182, 0.15)' },
+      adjust: { icon: '✏', bg: 'rgba(251, 191, 36, 0.15)' },
+      create: { icon: '✚', bg: 'rgba(0, 212, 170, 0.15)' },
+    }
+
+    // ── Modal functions ────────────────────────────────────────────
     (window as any).openSpoolModal = function(type: 'low' | 'empty') {
       const modal = document.getElementById('spool-modal') as HTMLElement
       const title = document.getElementById('modal-title') as HTMLElement
@@ -582,6 +862,7 @@ interface PaginatedResponse<T> {
       if (e.target === e.currentTarget) (window as any).closeSpoolModal()
     })
 
+    // ── Load data ──────────────────────────────────────────────────
     async function loadDashboardData() {
       try {
         const [spoolsRes, filamentsRes, dashboardRes] = await Promise.all([
@@ -606,8 +887,11 @@ interface PaginatedResponse<T> {
           const dist = dashboardData.spool_distribution || { full: 0, normal: 0, low: 0, critical: 0, empty: 0 }
           document.getElementById('stat-low-spools')!.textContent = (dist.low + dist.critical).toString()
           document.getElementById('stat-empty-spools')!.textContent = dist.empty.toString()
-          
-          // Status bar chart
+
+          // Total weight stat
+          document.getElementById('stat-total-weight')!.textContent = formatWeight(dashboardData.total_weight_g || 0)
+
+          // ── Widget: Spool Status ─────────────────────────────────
           const statusContainer = document.getElementById('spool-status')!
           const total = dist.full + dist.normal + dist.low + dist.critical + dist.empty
           const segments = [
@@ -639,7 +923,89 @@ interface PaginatedResponse<T> {
             statusContainer.innerHTML = `<p style="color: var(--text-muted); font-size: 0.85rem;">${t('dashboard.noData')}</p>`
           }
 
-          // Location stats
+          // ── Widget: Total Weight ─────────────────────────────────
+          const weightContainer = document.getElementById('total-weight')!
+          const totalW = dashboardData.total_weight_g || 0
+          const totalInitW = dashboardData.total_initial_weight_g || 1
+          const pct = Math.min(100, Math.round((totalW / totalInitW) * 100))
+          const activeCount = dashboardData.spool_count_active || 0
+          
+          weightContainer.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px;">
+              <span style="font-size: 1.3rem; font-weight: 700;">${formatWeight(totalW)}</span>
+              <span style="font-size: 0.75rem; color: var(--text-muted);">${t('dashboard.ofInitial')} ${formatWeight(totalInitW)}</span>
+            </div>
+            <div class="weight-progress">
+              <div class="weight-progress-fill" style="width: ${pct}%;"></div>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 0.75rem; color: var(--text-muted);">
+              <span>${pct}% ${t('dashboard.remaining')}</span>
+              <span>${activeCount} ${t('dashboard.activeSpools')}</span>
+            </div>
+          `
+
+          // ── Widget: Color Distribution ───────────────────────────
+          const colorContainer = document.getElementById('color-distribution')!
+          const colors = dashboardData.color_distribution || []
+          if (colors.length === 0) {
+            colorContainer.innerHTML = `<p style="color: var(--text-muted); font-size: 0.85rem;">${t('dashboard.noData')}</p>`
+          } else {
+            const maxCount = Math.max(...colors.map((c: any) => c.spool_count))
+            colorContainer.innerHTML = colors.map((c: any) => `
+              <div class="color-row">
+                <div class="color-swatch" style="background: ${c.hex_code};"></div>
+                <span style="min-width: 70px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${c.color_name}</span>
+                <div class="color-bar">
+                  <div class="color-bar-fill" style="width: ${Math.round((c.spool_count / maxCount) * 100)}%; background: ${c.hex_code};"></div>
+                </div>
+                <span style="font-family: var(--font-mono); font-size: 0.75rem; min-width: 20px; text-align: right;">${c.spool_count}</span>
+              </div>
+            `).join('')
+          }
+
+          // ── Widget: Recent Activity ──────────────────────────────
+          const activityContainer = document.getElementById('recent-activity')!
+          const events = dashboardData.recent_events || []
+          if (events.length === 0) {
+            activityContainer.innerHTML = `<p style="color: var(--text-muted); font-size: 0.85rem;">${t('dashboard.noRecentActivity')}</p>`
+          } else {
+            activityContainer.innerHTML = events.slice(0, 10).map((ev: any) => {
+              const info = EVENT_ICONS[ev.event_type] || { icon: '•', bg: 'rgba(107,114,128,0.15)' }
+              const weightInfo = ev.delta_weight_g != null ? ` (${ev.delta_weight_g > 0 ? '+' : ''}${ev.delta_weight_g.toFixed(0)}g)` : ''
+              return `
+                <div class="event-row" style="cursor: pointer;" onclick="window.location.href='/spools/${ev.spool_id}'">
+                  <div class="event-icon" style="background: ${info.bg};">${info.icon}</div>
+                  <div style="flex: 1; min-width: 0;">
+                    <div style="font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                      #${ev.spool_id} · ${ev.filament_name || ''}${weightInfo}
+                    </div>
+                    <div style="font-size: 0.7rem; color: var(--text-muted);">${ev.event_type}${ev.note ? ' · ' + ev.note : ''}</div>
+                  </div>
+                  <span class="event-time">${timeAgo(ev.event_at)}</span>
+                </div>
+              `
+            }).join('')
+          }
+
+          // ── Widget: Printer Overview ─────────────────────────────
+          const printerContainer = document.getElementById('printer-overview')!
+          const printers = dashboardData.printer_overview || []
+          if (printers.length === 0) {
+            printerContainer.innerHTML = `<p style="color: var(--text-muted); font-size: 0.85rem;">${t('dashboard.noData')}</p>`
+          } else {
+            printerContainer.innerHTML = printers.map((p: any) => `
+              <div class="printer-row" onclick="window.location.href='/printers/${p.id}'">
+                <span class="printer-dot" style="background: ${p.is_active ? '#22c55e' : '#6b7280'};"></span>
+                <div style="flex: 1; min-width: 0;">
+                  <div style="font-weight: 500; font-size: 0.85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${p.name}</div>
+                  <div style="font-size: 0.7rem; color: var(--text-muted);">${p.model || p.driver_key}</div>
+                </div>
+                <span class="printer-slots">${p.loaded_spools}/${p.slot_count}</span>
+              </div>
+            `).join('')
+          }
+
+          // ── Widget: Location Stats ───────────────────────────────
           const locationStatsContainer = document.getElementById('location-stats')!
           if (!dashboardData.location_stats || dashboardData.location_stats.length === 0) {
             locationStatsContainer.innerHTML = `<p style="color: var(--text-muted); font-size: 0.85rem;">${t('dashboard.noData')}</p>`
@@ -661,7 +1027,7 @@ interface PaginatedResponse<T> {
               `</tbody></table>`
           }
 
-          // Filament stats
+          // ── Widget: Filament Stats ───────────────────────────────
           const filamentStatsContainer = document.getElementById('filament-stats')!
           if (!dashboardData.filament_stats || dashboardData.filament_stats.length === 0) {
             filamentStatsContainer.innerHTML = `<p style="color: var(--text-muted); font-size: 0.85rem;">${t('dashboard.noData')}</p>`
@@ -683,7 +1049,7 @@ interface PaginatedResponse<T> {
               `</tbody></table>`
           }
 
-          // Manufacturers
+          // ── Widget: Manufacturers ────────────────────────────────
           const mfrContainer = document.getElementById('manufacturers-with-spools')!
           if (dashboardData.manufacturers_with_spools.length === 0) {
             mfrContainer.innerHTML = `<p style="color: var(--text-muted); font-size: 0.85rem;">${t('dashboard.noData')}</p>`
@@ -695,7 +1061,7 @@ interface PaginatedResponse<T> {
               `</tbody></table>`
           }
 
-          // Low stock
+          // ── Widget: Low Stock ────────────────────────────────────
           const mfrLowStockContainer = document.getElementById('low-stock-spools')!
           if (dashboardData.low_stock_spools.length === 0) {
             mfrLowStockContainer.innerHTML = `<p style="color: var(--accent); font-size: 0.85rem;">${t('dashboard.allSufficient')}</p>`
@@ -717,7 +1083,7 @@ interface PaginatedResponse<T> {
               `</tbody></table>`
           }
 
-          // Filament types
+          // ── Widget: Filament Types ───────────────────────────────
           const typesContainer = document.getElementById('filament-types')!
           if (dashboardData.filament_types.length === 0) {
             typesContainer.innerHTML = `<p style="color: var(--text-muted); font-size: 0.85rem;">${t('dashboard.noData')}</p>`
@@ -734,18 +1100,24 @@ interface PaginatedResponse<T> {
       }
     }
 
+    // ── Init ───────────────────────────────────────────────────────
     async function init() {
       await initI18n()
 
-      // Translate widget names
       WIDGET_NAMES['spool-status'] = t('dashboard.spoolStatus')
+      WIDGET_NAMES['total-weight'] = t('dashboard.weightOverview')
       WIDGET_NAMES['low-stock'] = t('dashboard.lowStockSpools')
+      WIDGET_NAMES['color-distribution'] = t('dashboard.colorDistribution')
+      WIDGET_NAMES['recent-activity'] = t('dashboard.recentActivity')
+      WIDGET_NAMES['printer-overview'] = t('dashboard.printerOverview')
       WIDGET_NAMES['manufacturers'] = t('dashboard.manufacturersWithSpools')
       WIDGET_NAMES['filament-types'] = t('dashboard.filamentTypes')
       WIDGET_NAMES['location-stats'] = t('dashboard.locationStats')
       WIDGET_NAMES['filament-stats'] = t('dashboard.filamentStats')
 
+      applyWidgetOrder()
       applyWidgetVisibility()
+      setupDragAndDrop()
       await loadDashboardData()
     }
     init()
