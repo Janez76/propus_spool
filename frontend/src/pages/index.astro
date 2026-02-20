@@ -39,7 +39,7 @@ interface PaginatedResponse<T> {
 ---
 
 <Layout title="Propus Spool - Dashboard">
-  <style>
+  <style is:global>
     .db-header {
       display: flex;
       align-items: center;
@@ -389,65 +389,71 @@ interface PaginatedResponse<T> {
       opacity: 0.8;
     }
 
-    /* Shared widget list item styles */
     .wg-row {
       display: flex;
       align-items: center;
       gap: 10px;
-      padding: 8px 4px;
-      border-bottom: 1px solid var(--border-subtle);
-      font-size: 0.82rem;
+      padding: 6px 4px;
+      font-size: 0.78rem;
       cursor: pointer;
       transition: background 0.15s;
-      border-radius: var(--radius-sm);
+      border-radius: 6px;
     }
-    .wg-row:last-child { border-bottom: none; }
     .wg-row:hover { background: var(--bg-soft); }
     .wg-icon {
-      width: 32px; height: 32px;
-      border-radius: var(--radius-sm);
+      width: 30px; height: 30px;
+      border-radius: 8px;
       display: flex; align-items: center; justify-content: center;
       flex-shrink: 0;
-      font-size: 0.9rem;
+      font-size: 0.8rem;
     }
     .wg-info { flex: 1; min-width: 0; }
     .wg-name {
       font-weight: 600;
+      font-size: 0.76rem;
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
     .wg-sub {
-      font-size: 0.7rem;
+      font-size: 0.65rem;
       color: var(--text-muted);
+      margin-top: 1px;
     }
     .wg-val {
       font-family: var(--font-mono);
-      font-weight: 600;
-      font-size: 0.82rem;
+      font-weight: 700;
+      font-size: 0.78rem;
       flex-shrink: 0;
+      color: var(--text-muted);
     }
 
     .event-row {
       display: flex;
       align-items: center;
       gap: 10px;
-      padding: 7px 0;
-      border-bottom: 1px solid var(--border-subtle);
-      font-size: 0.8rem;
+      padding: 6px 4px;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      cursor: pointer;
+      transition: background 0.15s;
     }
-    .event-row:last-child { border-bottom: none; }
+    .event-row:hover { background: var(--bg-soft); }
     .event-icon {
       width: 28px;
       height: 28px;
-      border-radius: 6px;
-      display: grid;
-      place-items: center;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       flex-shrink: 0;
-      font-size: 0.75rem;
     }
     .event-time {
-      font-size: 0.7rem;
+      font-family: var(--font-mono);
+      font-size: 0.62rem;
       color: var(--text-muted);
       white-space: nowrap;
+      background: var(--bg-soft);
+      padding: 2px 6px;
+      border-radius: 4px;
     }
 
     .pm-card { padding: 0; }
@@ -900,12 +906,12 @@ interface PaginatedResponse<T> {
       return `${Math.floor(diff / 86400)}d`
     }
 
-    const EVENT_ICONS: Record<string, { icon: string; bg: string }> = {
-      weigh: { icon: '⚖', bg: 'rgba(56, 189, 248, 0.15)' },
-      status_change: { icon: '🔄', bg: 'rgba(168, 85, 247, 0.15)' },
-      location_change: { icon: '📍', bg: 'rgba(244, 114, 182, 0.15)' },
-      adjust: { icon: '✏', bg: 'rgba(251, 191, 36, 0.15)' },
-      create: { icon: '✚', bg: 'rgba(0, 212, 170, 0.15)' },
+    const EVENT_ICONS: Record<string, { icon: string; bg: string; color: string }> = {
+      weigh: { icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v17.25M18.75 3H5.25A2.25 2.25 0 003 5.25v0a2.25 2.25 0 002.25 2.25h13.5A2.25 2.25 0 0021 5.25v0A2.25 2.25 0 0018.75 3z"/></svg>', bg: 'rgba(56,189,248,0.12)', color: '#38bdf8' },
+      status_change: { icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>', bg: 'rgba(168,85,247,0.12)', color: '#a855f7' },
+      location_change: { icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>', bg: 'rgba(244,114,182,0.12)', color: '#f472b6' },
+      adjust: { icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>', bg: 'rgba(251,191,36,0.12)', color: '#fbbf24' },
+      create: { icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>', bg: 'rgba(0,212,170,0.12)', color: '#00d4aa' },
     };
 
     ;(window as any).openSpoolModal = function(type: 'low' | 'empty') {
@@ -1104,26 +1110,26 @@ interface PaginatedResponse<T> {
             });
 
             statusContainer.innerHTML = `
-              <div style="display:flex;align-items:center;gap:16px;">
-                <div id="spool-donut" style="position:relative;width:80px;height:80px;flex-shrink:0;">
-                  <svg viewBox="0 0 90 90" style="width:100%;height:100%;display:block;transform:rotate(-90deg);">
+              <div class="spool-chart-wrap">
+                <div class="spool-donut" id="spool-donut">
+                  <svg viewBox="0 0 90 90" style="transform: rotate(-90deg);">
                     <circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="var(--border-subtle)" stroke-width="${SW}" opacity="0.3" />
                     ${arcs.join('')}
                   </svg>
-                  <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;">
-                    <span id="donut-total" style="font-size:1rem;font-weight:800;line-height:1;transition:color 0.15s;">${total}</span>
-                    <span id="donut-sublabel" style="font-size:0.45rem;color:var(--text-muted);margin-top:1px;text-transform:uppercase;letter-spacing:0.04em;">${t('nav.spools')}</span>
+                  <div class="spool-donut-center">
+                    <span class="spool-donut-total" id="donut-total">${total}</span>
+                    <span class="spool-donut-sublabel" id="donut-sublabel">${t('nav.spools')}</span>
                   </div>
                 </div>
-                <div id="spool-legend" style="display:flex;flex-direction:column;gap:0;flex:1;min-width:0;">
+                <div class="spool-legend" id="spool-legend">
                   ${segments.map(s => {
                     const pct = total > 0 ? Math.round((s.count / total) * 100) : 0;
                     return `
-                      <div class="spool-legend-item" data-key="${s.key}" style="display:flex;align-items:center;gap:8px;padding:3px 4px;border-radius:4px;cursor:pointer;">
-                        <span style="width:8px;height:8px;border-radius:50%;background:${s.color};flex-shrink:0;"></span>
-                        <span style="flex:1;font-size:0.72rem;font-weight:500;line-height:1;">${s.label}</span>
-                        <span style="font-size:0.72rem;font-weight:700;color:${s.color};min-width:14px;text-align:right;">${s.count}</span>
-                        <span style="font-size:0.6rem;color:var(--text-muted);min-width:24px;text-align:right;">${pct}%</span>
+                      <div class="spool-legend-item" data-key="${s.key}">
+                        <span class="spool-legend-dot" style="background:${s.color};"></span>
+                        <span class="spool-legend-label">${s.label}</span>
+                        <span class="spool-legend-count" style="color:${s.color};">${s.count}</span>
+                        <span class="spool-legend-pct">${pct}%</span>
                       </div>`;
                   }).join('')}
                 </div>
@@ -1186,20 +1192,29 @@ interface PaginatedResponse<T> {
           const totalInitW = dashboardData.total_initial_weight_g || 1
           const pct = Math.min(100, Math.round((totalW / totalInitW) * 100))
           const activeCount = dashboardData.spool_count_active || 0
-          
+          const wR = 34, wC = 2 * Math.PI * wR
+          const wDash = (pct / 100) * wC
+          const wGap = wC - wDash
+          const wColor = pct > 60 ? 'var(--accent)' : pct > 30 ? '#eab308' : '#ef4444'
+
           weightContainer.innerHTML = `
-            <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px;">
-              <span style="font-size: 1.3rem; font-weight: 700;">${formatWeight(totalW)}</span>
-              <span style="font-size: 0.75rem; color: var(--text-muted);">${t('dashboard.ofInitial')} ${formatWeight(totalInitW)}</span>
-            </div>
-            <div class="weight-progress">
-              <div class="weight-progress-fill" style="width: ${pct}%;"></div>
-            </div>
-            <div style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 0.75rem; color: var(--text-muted);">
-              <span>${pct}% ${t('dashboard.remaining')}</span>
-              <span>${activeCount} ${t('dashboard.activeSpools')}</span>
-            </div>
-          `
+            <div style="display:flex;align-items:center;gap:16px;">
+              <div style="position:relative;width:70px;height:70px;flex-shrink:0;">
+                <svg viewBox="0 0 80 80" style="width:100%;height:100%;transform:rotate(-90deg);">
+                  <circle cx="40" cy="40" r="${wR}" fill="none" stroke="var(--border-subtle)" stroke-width="8" opacity="0.3"/>
+                  <circle cx="40" cy="40" r="${wR}" fill="none" stroke="${wColor}" stroke-width="8" stroke-dasharray="${wDash} ${wGap}" stroke-linecap="round"/>
+                </svg>
+                <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:0.85rem;font-weight:800;">${pct}%</div>
+              </div>
+              <div style="flex:1;min-width:0;">
+                <div style="font-size:1.2rem;font-weight:700;margin-bottom:2px;">${formatWeight(totalW)}</div>
+                <div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:6px;">${t('dashboard.ofInitial')} ${formatWeight(totalInitW)}</div>
+                <div style="display:flex;gap:12px;font-size:0.68rem;color:var(--text-muted);">
+                  <span style="display:flex;align-items:center;gap:4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>${activeCount} aktiv</span>
+                  <span style="display:flex;align-items:center;gap:4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="${wColor}" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>${pct}% Rest</span>
+                </div>
+              </div>
+            </div>`
 
           // ── Widget: Color Distribution ───────────────────────────
           const colorContainer = document.getElementById('color-distribution')!
@@ -1212,18 +1227,16 @@ interface PaginatedResponse<T> {
               const hex = (c.hex_code || '#888').trim()
               const name = c.color_name && c.color_name.toLowerCase() !== hex.toLowerCase() ? c.color_name : ''
               const barPct = Math.round((c.spool_count / maxCount) * 100)
-              return `<div style="display:flex;align-items:center;gap:10px;padding:5px 2px;">
-                <div style="width:24px;height:24px;border-radius:6px;background:${hex};flex-shrink:0;border:2px solid rgba(255,255,255,0.08);box-shadow:0 1px 3px rgba(0,0,0,0.3);"></div>
-                <div style="flex:1;min-width:0;">
-                  <div style="display:flex;align-items:center;gap:6px;">
-                    <span style="font-weight:600;font-size:0.76rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${name || hex}</span>
-                    ${name ? `<span style="font-family:var(--font-mono);font-size:0.55rem;color:var(--text-muted);background:var(--bg-soft);padding:1px 4px;border-radius:3px;">${hex}</span>` : ''}
+              return `<div class="color-row">
+                <div class="color-swatch" style="background:${hex};"></div>
+                <div class="color-info">
+                  <div class="color-info-top">
+                    <span class="color-name">${name || hex}</span>
+                    ${name ? `<span class="color-hex">${hex}</span>` : ''}
                   </div>
-                  <div style="height:3px;background:var(--bg-soft);border-radius:2px;overflow:hidden;margin-top:3px;">
-                    <div style="height:100%;width:${barPct}%;background:${hex};border-radius:2px;opacity:0.7;"></div>
-                  </div>
+                  <div class="color-bar"><div class="color-bar-fill" style="width:${barPct}%;background:${hex};"></div></div>
                 </div>
-                <span style="font-size:0.72rem;font-weight:700;color:var(--text-muted);min-width:16px;text-align:right;">${c.spool_count}</span>
+                <span class="color-count">${c.spool_count}</span>
               </div>`
             }).join('')
           }
@@ -1235,20 +1248,19 @@ interface PaginatedResponse<T> {
             activityContainer.innerHTML = `<p style="color: var(--text-muted); font-size: 0.85rem;">${t('dashboard.noRecentActivity')}</p>`
           } else {
             activityContainer.innerHTML = events.slice(0, 10).map((ev: any) => {
-              const info = EVENT_ICONS[ev.event_type] || { icon: '•', bg: 'rgba(107,114,128,0.15)' }
+              const info = EVENT_ICONS[ev.event_type] || { icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/></svg>', bg: 'rgba(107,114,128,0.12)', color: '#6b7280' }
               const weightInfo = ev.delta_weight_g != null ? ` (${ev.delta_weight_g > 0 ? '+' : ''}${ev.delta_weight_g.toFixed(0)}g)` : ''
               return `
-                <div class="event-row" style="cursor: pointer;" onclick="window.location.href='/spools/${ev.spool_id}'">
-                  <div class="event-icon" style="background: ${info.bg};">${info.icon}</div>
-                  <div style="flex: 1; min-width: 0;">
-                    <div style="font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                <div class="event-row" onclick="window.location.href='/spools/${ev.spool_id}'">
+                  <div class="event-icon" style="background:${info.bg};color:${info.color};">${info.icon}</div>
+                  <div style="flex:1;min-width:0;">
+                    <div style="font-weight:600;font-size:0.76rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
                       #${ev.spool_id} · ${ev.filament_name || ''}${weightInfo}
                     </div>
-                    <div style="font-size: 0.7rem; color: var(--text-muted);">${ev.event_type}${ev.note ? ' · ' + ev.note : ''}</div>
+                    <div style="font-size:0.65rem;color:var(--text-muted);">${ev.event_type}${ev.note ? ' · ' + ev.note : ''}</div>
                   </div>
                   <span class="event-time">${timeAgo(ev.event_at)}</span>
-                </div>
-              `
+                </div>`
             }).join('')
           }
 
@@ -1340,16 +1352,18 @@ interface PaginatedResponse<T> {
             typesContainer.innerHTML = `<p style="color: var(--text-muted); font-size: 0.85rem;">${t('dashboard.noData')}</p>`
           } else {
             const typeColors: Record<string, string> = { PLA: '#22c55e', PETG: '#3b82f6', ABS: '#ef4444', ASA: '#f97316', TPU: '#a855f7', PA: '#06b6d4', PC: '#6366f1' }
+            const typeBg: Record<string, string> = { PLA: 'rgba(34,197,94,0.12)', PETG: 'rgba(59,130,246,0.12)', ABS: 'rgba(239,68,68,0.12)', ASA: 'rgba(249,115,22,0.12)', TPU: 'rgba(168,85,247,0.12)', PA: 'rgba(6,182,212,0.12)', PC: 'rgba(99,102,241,0.12)' }
             const typeMax = Math.max(...dashboardData.filament_types.map((t: any) => t.count))
             typesContainer.innerHTML = dashboardData.filament_types.map((ft: any) => {
               const clr = typeColors[ft.type] || '#8b5cf6'
+              const bg = typeBg[ft.type] || 'rgba(139,92,246,0.12)'
               const pct = Math.round((ft.count / typeMax) * 100)
               return `<div class="wg-row" onclick="window.location.href='/spools?material=${encodeURIComponent(ft.type)}'">
-                <div class="wg-icon" style="background: ${clr}22; color: ${clr}; font-weight: 700; font-size: 0.65rem;">${ft.type.substring(0, 4)}</div>
+                <div class="wg-icon" style="background:${bg};color:${clr};font-weight:700;font-size:0.65rem;">${ft.type.substring(0, 4)}</div>
                 <div class="wg-info">
                   <div class="wg-name">${ft.type}</div>
-                  <div style="height: 4px; background: var(--bg-soft); border-radius: 2px; overflow: hidden; margin-top: 4px;">
-                    <div style="height: 100%; width: ${pct}%; background: ${clr}; border-radius: 2px;"></div>
+                  <div style="height:3px;background:var(--bg-soft);border-radius:2px;overflow:hidden;margin-top:3px;">
+                    <div style="height:100%;width:${pct}%;background:${clr};border-radius:2px;"></div>
                   </div>
                 </div>
                 <span class="wg-val">${ft.count}</span>
