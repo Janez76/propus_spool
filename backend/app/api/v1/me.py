@@ -27,6 +27,7 @@ class MeResponse(BaseModel):
 class MeUpdate(BaseModel):
     display_name: str | None = None
     language: str | None = None
+    email: str | None = None
 
 
 class ChangePasswordRequest(BaseModel):
@@ -91,9 +92,19 @@ async def update_me(
         user.display_name = data.display_name
     if data.language is not None:
         user.language = data.language
+    if data.email is not None:
+        existing = await db.execute(
+            select(User).where(User.email == data.email, User.id != user.id)
+        )
+        if existing.scalar_one_or_none():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={"code": "email_taken", "message": "Email is already in use"},
+            )
+        user.email = data.email
 
     await db.commit()
-    await db.refresh(user, attribute_names=["language", "display_name"])
+    await db.refresh(user, attribute_names=["language", "display_name", "email"])
 
     roles = [r.key for r in user.roles]
     permissions = list(set(

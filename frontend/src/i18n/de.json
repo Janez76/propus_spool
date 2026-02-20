@@ -114,7 +114,9 @@
     "statusNormal": "Normal",
     "statusLow": "Niedrig",
     "statusCritical": "Kritisch",
-    "statusEmpty": "Leer"
+    "statusEmpty": "Leer",
+    "customize": "Anpassen",
+    "customizeWidgets": "Dashboard Widgets"
   },
   "settings": {
     "title": "Einstellungen",
@@ -126,6 +128,7 @@
     "langDe": "Deutsch",
     "saveProfile": "Profil speichern",
     "profileSaved": "Profil erfolgreich gespeichert",
+    "profileDesc": "Kontodaten verwalten",
     "profileFailed": "Profil konnte nicht gespeichert werden",
     "changePassword": "Passwort ändern",
     "currentPassword": "Aktuelles Passwort",
@@ -135,7 +138,8 @@
     "passwordFailed": "Passwort konnte nicht geändert werden",
     "passwordsNoMatch": "Passwörter stimmen nicht überein",
     "passwordTooShort": "Passwort muss mindestens 8 Zeichen lang sein",
-    "changingPassword": "Ändern..."
+    "changingPassword": "Ändern...",
+    "passwordDesc": "Passwort aktualisieren"
   },
   "filaments": {
     "title": "Filamente",

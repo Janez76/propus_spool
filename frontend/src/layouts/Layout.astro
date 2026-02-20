@@ -12,10 +12,10 @@ const { title } = Astro.props
 <html lang="en" data-theme="brand">
   <head>
     <meta charset="utf-8" />
-    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="icon" type="image/png" href="/logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link
-      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Fraunces:wght@500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
     <meta name="generator" content={Astro.generator} />
@@ -33,21 +33,21 @@ const { title } = Astro.props
     <div id="fm-page" class="fm-page">
       <aside class="fm-sidebar fm-surface">
         <button id="sidebar-toggle" class="fm-sidebar-toggle" aria-label="Toggle Sidebar">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
         </button>
 
         <div class="fm-sidebar-content">
           <!-- Logo -->
-          <div class="fm-logo-container">
-            <img src="/logo.png" alt="Propus Spool" style="width: 42px; height: 42px; border-radius: 14px; flex-shrink: 0;" />
+          <div class="fm-logo-container" style="padding: 4px 0 8px;">
+            <img src="/logo.png" alt="Propus Spool" style="width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;" />
             <div class="fm-logo-text">
-              <div style="font-weight: 700; letter-spacing: 0.6px;">Propus Spool</div>
-              <small style="color: var(--text-muted); font-size: 0.7rem;" data-i18n="app.subtitle">Filament Management</small>
+              <div style="font-weight: 700; font-size: 0.95rem; letter-spacing: -0.01em;">Propus Spool</div>
+              <small style="color: var(--text-muted); font-size: 0.65rem;" data-i18n="app.subtitle">Filament Management</small>
             </div>
           </div>
 
           <!-- Navigation -->
-          <nav style="display: grid; gap: 6px;">
+          <nav style="display: grid; gap: 2px;">
             <a href="/" class="fm-nav-item">
               <span class="fm-nav-icon"><svg><use href="/icons.svg#icon-dashboard"></use></svg></span>
               <span data-i18n="nav.dashboard">Dashboard</span>
@@ -74,8 +74,8 @@ const { title } = Astro.props
             </a>
 
             <div id="admin-nav" class="invisible" style="margin-top: 4px;">
-              <hr class="fm-divider" style="margin-bottom: 8px;" />
-              <div class="hide-collapsed" style="color: var(--text-muted); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; padding: 0 12px; margin-bottom: 6px;" data-i18n="nav.admin">Admin</div>
+              <hr class="fm-divider" style="margin-bottom: 6px;" />
+              <div class="hide-collapsed" style="color: var(--text-muted); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.08em; padding: 0 12px; margin-bottom: 4px;" data-i18n="nav.admin">Admin</div>
               <a href="/admin" class="fm-nav-item">
                 <span class="fm-nav-icon"><svg><use href="/icons.svg#icon-admin"></use></svg></span>
                 <span data-i18n="nav.adminPanel">Admin Panel</span>
@@ -83,32 +83,22 @@ const { title } = Astro.props
             </div>
           </nav>
 
-          <!-- Sidebar Footer: User + Theme -->
-          <div class="hide-collapsed" style="margin-top: auto; display: grid; gap: 12px;">
-            <!-- User Profile Row -->
-            <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: var(--bg-soft); border-radius: 12px; border: 1px solid var(--border);">
-              <div style="overflow: hidden; padding-right: 8px;">
-                <div id="user-name" style="font-weight: 600; color: var(--text); font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+          <!-- Sidebar Footer -->
+          <div class="hide-collapsed" style="margin-top: auto; display: grid; gap: 10px;">
+            <!-- User -->
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; background: var(--bg-soft); border-radius: var(--radius-sm); border: 1px solid var(--border);">
+              <div style="overflow: hidden; padding-right: 6px; min-width: 0;">
+                <div id="user-name" style="font-weight: 600; color: var(--text); font-size: 0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                   <span style="color: var(--text-muted);" data-i18n="common.loading">Loading...</span>
                 </div>
-                <div id="user-role" class="invisible" style="color: var(--text-muted); font-size: 0.7rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">User</div>
+                <div id="user-role" class="invisible" style="color: var(--text-muted); font-size: 0.65rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">User</div>
               </div>
-              <div style="display: flex; gap: 4px;">
-                <a
-                  href="/settings"
-                  class="fm-btn fm-btn-outline"
-                  style="padding: 6px; line-height: 0; border-radius: 8px; flex-shrink: 0;"
-                  data-i18n-title="nav.settings"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+              <div style="display: flex; gap: 2px; flex-shrink: 0;">
+                <a href="/settings" class="fm-btn fm-btn-outline" style="padding: 5px; line-height: 0; border-radius: 6px;" data-i18n-title="nav.settings">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
                 </a>
-                <button
-                  id="logout-btn"
-                  class="fm-btn fm-btn-outline"
-                  style="padding: 6px; line-height: 0; border-radius: 8px; flex-shrink: 0;"
-                  data-i18n-title="nav.logout"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                <button id="logout-btn" class="fm-btn fm-btn-outline" style="padding: 5px; line-height: 0; border-radius: 6px;" data-i18n-title="nav.logout">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
                 </button>
               </div>
             </div>
@@ -120,19 +110,18 @@ const { title } = Astro.props
             </div>
 
             <!-- Buy Me A Coffee -->
-            <div style="text-align: center; margin-top: 4px;">
-              <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 6px;" data-i18n="nav.supportProject">Unterstütze das Projekt</div>
-              <a href="https://buymeacoffee.com/propuscode" target="_blank" style="display: inline-block; transition: transform var(--transition);" onmouseenter="this.style.transform='scale(1.05)'" onmouseleave="this.style.transform='scale(1)'">
-                <img src="/img/buymeacoffy.png" alt="Buy Me A Coffee" style="height: 44px; width: auto; display: block;" >
+            <div style="text-align: center;">
+              <a href="https://buymeacoffee.com/propuscode" target="_blank" style="display: inline-block; transition: transform var(--transition); opacity: 0.7;" onmouseenter="this.style.opacity='1';this.style.transform='scale(1.05)'" onmouseleave="this.style.opacity='0.7';this.style.transform='scale(1)'">
+                <img src="/img/buymeacoffy.png" alt="Buy Me A Coffee" style="height: 36px; width: auto; display: block;" >
               </a>
             </div>
 
-            <div style="font-size: 0.7rem; color: var(--text-muted); text-align: center;">{'v' + VERSION}</div>
+            <div style="font-size: 0.65rem; color: var(--text-muted); text-align: center; opacity: 0.6;">{'v' + VERSION}</div>
           </div>
         </div>
       </aside>
 
-      <main style="padding: 32px; overflow-y: auto;">
+      <main style="padding: 28px; overflow-y: auto;">
         <slot />
       </main>
     </div>
@@ -152,10 +141,8 @@ const { title } = Astro.props
     <script>
       import { t, initI18n, syncLangFromUser, translatePage } from '../lib/i18n'
 
-      /* ── i18n init ───────────────────────────────────────────── */
       await initI18n()
 
-      // Expose t and translatePage globally for page scripts
       ;(window as any).__t = t
       ;(window as any).__translatePage = translatePage
       ;(window as any).__syncLangFromUser = syncLangFromUser
@@ -207,7 +194,6 @@ const { title } = Astro.props
           if (e.key === 'Escape' && overlay.classList.contains('open')) closeModal(false)
         })
 
-        // fmConfirm(message, options?) – replacement for window.confirm()
         ;(window as any).__fmConfirm = function(message: string, options?: { title?: string; okLabel?: string; isDanger?: boolean }): Promise<boolean> {
           const title = options?.title || t('common.confirmTitle') || t('common.delete')
           const okLabel = options?.okLabel || t('common.delete')
@@ -215,7 +201,6 @@ const { title } = Astro.props
           return openModal(title, message, okLabel, t('common.cancel'), isDanger)
         }
 
-        // fmAlert(message) – replacement for window.alert()
         ;(window as any).__fmAlert = function(message: string): Promise<boolean> {
           return openModal(t('common.errorTitle') || 'Error', message, t('common.close'), null, false)
         }
@@ -232,7 +217,6 @@ const { title } = Astro.props
         document.querySelector(`.fm-theme-toggle button[data-theme="${theme}"]`)?.classList.add('active')
       }
 
-      // Restore saved theme on load
       const saved = localStorage.getItem('theme') || 'brand'
       setTheme(saved)
 
@@ -251,20 +235,11 @@ const { title } = Astro.props
 
       async function checkAuth() {
         try {
-          const response = await fetch('/api/v1/me', {
-            credentials: 'include',
-          })
-
-          if (!response.ok) {
-            window.location.href = '/login'
-            return
-          }
+          const response = await fetch('/api/v1/me', { credentials: 'include' })
+          if (!response.ok) { window.location.href = '/login'; return }
 
           const user = await response.json()
-
-          // Sync language from user profile
           syncLangFromUser(user.language)
-
 
           userName.innerHTML = user.display_name || user.email
           userRole.innerHTML = user.roles.join(', ')
@@ -313,18 +288,13 @@ const { title } = Astro.props
       const sidebarToggle = document.getElementById('sidebar-toggle')!
 
       function setSidebarCollapsed(collapsed: boolean) {
-        if (collapsed) {
-          page.classList.add('collapsed')
-        } else {
-          page.classList.remove('collapsed')
-        }
+        if (collapsed) { page.classList.add('collapsed') }
+        else { page.classList.remove('collapsed') }
         localStorage.setItem('sidebar-collapsed', collapsed ? 'true' : 'false')
       }
 
-      // Initial state
       const isMobile = window.innerWidth <= 768
       const storedCollapsed = localStorage.getItem('sidebar-collapsed')
-      
       if (storedCollapsed === 'true' || (storedCollapsed === null && isMobile)) {
         setSidebarCollapsed(true)
       }
