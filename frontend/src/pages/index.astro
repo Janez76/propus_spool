@@ -455,129 +455,68 @@ interface PaginatedResponse<T> {
     .pm-card {
       border: 1px solid var(--border-subtle);
       border-radius: var(--radius-sm);
-      padding: 10px;
-      margin-bottom: 8px;
+      padding: 8px 10px;
       background: var(--bg-soft);
-      transition: border-color 0.2s ease;
+      transition: border-color 0.15s;
+      cursor: pointer;
     }
-    .pm-card:last-child { margin-bottom: 0; }
     .pm-card:hover { border-color: var(--accent); }
-    .pm-card-header {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 8px;
+    .pm-head {
+      display: flex; align-items: center; gap: 6px;
+      margin-bottom: 6px;
     }
-    .pm-status-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
+    .pm-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
     .pm-name {
-      font-weight: 600;
-      font-size: 0.82rem;
-      flex: 1;
-      min-width: 0;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+      font-weight: 600; font-size: 0.75rem; flex: 1;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
     .pm-badge {
-      font-size: 0.65rem;
-      font-weight: 600;
-      padding: 2px 8px;
-      border-radius: 10px;
-      text-transform: uppercase;
-      letter-spacing: 0.03em;
-      flex-shrink: 0;
+      font-size: 0.55rem; font-weight: 700; padding: 1px 6px;
+      border-radius: 8px; text-transform: uppercase; letter-spacing: 0.03em;
     }
-    .pm-badge.printing { background: rgba(16, 185, 129, 0.15); color: #10b981; }
-    .pm-badge.idle { background: rgba(107, 114, 128, 0.15); color: #6b7280; }
-    .pm-badge.paused { background: rgba(251, 191, 36, 0.15); color: #eab308; }
-    .pm-badge.error { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
-    .pm-badge.preparing { background: rgba(56, 189, 248, 0.15); color: #38bdf8; }
-    .pm-badge.offline { background: rgba(107, 114, 128, 0.1); color: #4b5563; }
-    .pm-content {
-      display: flex;
-      gap: 10px;
-    }
-    .pm-camera {
-      width: 120px;
-      height: 90px;
+    .pm-badge.printing { background: rgba(16,185,129,.15); color: #10b981; }
+    .pm-badge.idle { background: rgba(107,114,128,.15); color: #6b7280; }
+    .pm-badge.paused { background: rgba(251,191,36,.15); color: #eab308; }
+    .pm-badge.error { background: rgba(239,68,68,.15); color: #ef4444; }
+    .pm-badge.preparing { background: rgba(56,189,248,.15); color: #38bdf8; }
+    .pm-badge.offline { background: rgba(107,114,128,.1); color: #4b5563; }
+    .pm-body { display: flex; gap: 8px; }
+    .pm-cam {
+      width: 80px; height: 56px;
       border-radius: var(--radius-sm);
-      object-fit: cover;
-      background: var(--bg);
-      border: 1px solid var(--border-subtle);
-      flex-shrink: 0;
+      object-fit: cover; background: #0a0a0a;
+      border: 1px solid var(--border-subtle); flex-shrink: 0;
     }
     .pm-info { flex: 1; min-width: 0; }
     .pm-job {
-      font-size: 0.78rem;
-      font-weight: 500;
-      margin-bottom: 6px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+      font-size: 0.7rem; font-weight: 500;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      margin-bottom: 4px;
     }
-    .pm-progress-wrap {
-      margin-bottom: 6px;
+    .pm-bar-wrap { margin-bottom: 3px; }
+    .pm-bar {
+      height: 4px; background: var(--bg); border-radius: 2px; overflow: hidden;
     }
-    .pm-progress-bar {
-      height: 6px;
-      background: var(--bg);
-      border-radius: 3px;
-      overflow: hidden;
+    .pm-bar-fill {
+      height: 100%; border-radius: 2px;
+      background: linear-gradient(90deg, #3b82f6, #60a5fa);
+      transition: width 0.5s;
     }
-    .pm-progress-fill {
-      height: 100%;
-      border-radius: 3px;
-      background: linear-gradient(90deg, #10b981, #34d399);
-      transition: width 0.5s ease;
+    .pm-bar-text {
+      display: flex; justify-content: space-between;
+      font-size: 0.6rem; color: var(--text-muted); margin-top: 1px;
     }
-    .pm-progress-text {
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.68rem;
-      color: var(--text-muted);
-      margin-top: 2px;
+    .pm-stats {
+      display: flex; gap: 8px; font-size: 0.65rem; flex-wrap: wrap;
     }
-    .pm-temps {
-      display: flex;
-      gap: 12px;
-      font-size: 0.72rem;
+    .pm-stat {
+      display: flex; align-items: center; gap: 2px;
+      font-family: var(--font-mono);
     }
-    .pm-temp-item {
-      display: flex;
-      align-items: center;
-      gap: 3px;
-    }
-    .pm-temp-icon {
-      width: 12px;
-      height: 12px;
-      opacity: 0.6;
-    }
-    .pm-temp-val { font-family: var(--font-mono); font-weight: 500; }
-    .pm-temp-target { color: var(--text-muted); }
-    .pm-layer {
-      font-size: 0.68rem;
-      color: var(--text-muted);
-      margin-top: 3px;
-    }
-    .pm-idle-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 6px 0;
-      border-bottom: 1px solid var(--border-subtle);
-      cursor: pointer;
-      font-size: 0.82rem;
-    }
-    .pm-idle-row:last-child { border-bottom: none; }
-    .pm-idle-row:hover { opacity: 0.8; }
-    @media (max-width: 480px) {
-      .pm-camera { width: 80px; height: 60px; }
-      .pm-content { gap: 8px; }
+    .pm-stat-muted { color: var(--text-muted); }
+    .pm-idle-text {
+      font-size: 0.68rem; color: var(--text-muted);
+      display: flex; align-items: center; gap: 4px;
     }
   </style>
 
@@ -696,7 +635,7 @@ interface PaginatedResponse<T> {
         <div class="widget-title"><span class="dot" style="background: #10b981;"></span> <span>Drucker Monitor</span></div>
         <svg class="drag-handle" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg>
       </div>
-      <div class="widget-body" id="printer-monitor" style="max-height: none; overflow: visible;">
+      <div class="widget-body" id="printer-monitor" style="max-height: none; overflow: visible; display: flex; flex-direction: column; gap: 6px;">
         <p style="color: var(--text-muted); font-size: 0.85rem;">Laden...</p>
       </div>
     </div>
@@ -1479,41 +1418,39 @@ interface PaginatedResponse<T> {
       const stateLabel = PM_LABELS[p.state] || p.state
 
       if (!isActive(p.state)) {
-        el.className = ''
+        el.className = 'pm-card'
+        el.onclick = () => { window.location.href = `/printers/${p.id}` }
         el.innerHTML = `
-          <div class="pm-idle-row" onclick="window.location.href='/printers/${p.id}'">
-            <span class="pm-status-dot" style="background: ${dotColor};"></span>
+          <div class="pm-head">
+            <span class="pm-dot" style="background:${dotColor};"></span>
             <span class="pm-name">${p.name}</span>
             <span class="pm-badge ${badgeClass}">${stateLabel}</span>
-          </div>`
+          </div>
+          <div class="pm-idle-text"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" opacity="0.4"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>Kein aktiver Druck</div>`
         return
       }
 
       const pct = p.progress_pct ?? 0
-      el.className = ''
+      el.className = 'pm-card'
+      el.onclick = () => { window.location.href = '/monitoring' }
       el.innerHTML = `
-        <div class="pm-card" onclick="window.location.href='/monitoring'" style="cursor: pointer;">
-          <div class="pm-card-header">
-            <span class="pm-status-dot" style="background: ${dotColor};"></span>
-            <span class="pm-name">${p.name}</span>
-            <span class="pm-badge ${badgeClass}">${stateLabel}</span>
-          </div>
-          <div class="pm-content">
-            ${p.has_camera ? `<img class="pm-camera" data-cam-id="${p.id}" src="/api/v1/printers/${p.id}/camera?t=${Date.now()}" alt="Camera" onerror="this.style.display='none'" />` : ''}
-            <div class="pm-info">
-              <div class="pm-job" data-field="job">${p.job_name || 'Unbekannt'}</div>
-              <div class="pm-progress-wrap">
-                <div class="pm-progress-bar"><div class="pm-progress-fill" data-field="bar" style="width: ${pct}%;"></div></div>
-                <div class="pm-progress-text">
-                  <span data-field="pct">${pct}%</span>
-                  <span data-field="time">${p.remaining_min != null ? formatMinutes(p.remaining_min) + ' verbleibend' : (p.elapsed_min != null ? formatMinutes(p.elapsed_min) + ' vergangen' : '')}</span>
-                </div>
-              </div>
-              <div class="pm-temps">
-                ${p.nozzle_temp != null ? `<div class="pm-temp-item"><svg class="pm-temp-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg><span class="pm-temp-val" data-field="nozzle">${p.nozzle_temp}°</span>${p.nozzle_target ? `<span class="pm-temp-target">/${p.nozzle_target}°</span>` : ''}</div>` : ''}
-                ${p.bed_temp != null ? `<div class="pm-temp-item"><svg class="pm-temp-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/></svg><span class="pm-temp-val" data-field="bed">${p.bed_temp}°</span>${p.bed_target ? `<span class="pm-temp-target">/${p.bed_target}°</span>` : ''}</div>` : ''}
-              </div>
-              ${(p.layer != null && p.total_layers != null) ? `<div class="pm-layer" data-field="layer">Layer ${p.layer} / ${p.total_layers}</div>` : ''}
+        <div class="pm-head">
+          <span class="pm-dot" style="background:${dotColor};"></span>
+          <span class="pm-name">${p.name}</span>
+          <span class="pm-badge ${badgeClass}">${stateLabel}</span>
+        </div>
+        <div class="pm-body">
+          ${p.has_camera ? `<img class="pm-cam" data-cam-id="${p.id}" src="/api/v1/printers/${p.id}/camera?t=${Date.now()}" alt="" onerror="this.style.opacity='0.2'" />` : ''}
+          <div class="pm-info">
+            <div class="pm-job" data-field="job">${p.job_name || 'Unbekannt'}</div>
+            <div class="pm-bar-wrap">
+              <div class="pm-bar"><div class="pm-bar-fill" data-field="bar" style="width:${pct}%;"></div></div>
+              <div class="pm-bar-text"><span data-field="pct">${pct}%</span><span data-field="time">${p.remaining_min != null ? formatMinutes(p.remaining_min) : ''}</span></div>
+            </div>
+            <div class="pm-stats">
+              ${p.nozzle_temp != null ? `<span class="pm-stat" data-field="nozzle">${Math.round(p.nozzle_temp)}°<span class="pm-stat-muted">/${p.nozzle_target ? Math.round(p.nozzle_target) : '-'}°</span></span>` : ''}
+              ${p.bed_temp != null ? `<span class="pm-stat" data-field="bed">${Math.round(p.bed_temp)}°<span class="pm-stat-muted">/${p.bed_target ? Math.round(p.bed_target) : '-'}°</span></span>` : ''}
+              ${(p.layer != null && p.total_layers != null) ? `<span class="pm-stat" data-field="layer">L${p.layer}/${p.total_layers}</span>` : ''}
             </div>
           </div>
         </div>`
@@ -1527,33 +1464,18 @@ interface PaginatedResponse<T> {
         return
       }
       pmLastStates[p.id] = p.state
-
       if (!isActive(p.state)) return
 
       const pct = p.progress_pct ?? 0
       const q = (sel: string) => el.querySelector(`[data-field="${sel}"]`) as HTMLElement | null
 
-      const jobEl = q('job')
-      if (jobEl) jobEl.textContent = p.job_name || 'Unbekannt'
-
-      const barEl = q('bar') as HTMLElement | null
-      if (barEl) barEl.style.width = `${pct}%`
-
-      const pctEl = q('pct')
-      if (pctEl) pctEl.textContent = `${pct}%`
-
-      const timeEl = q('time')
-      if (timeEl) timeEl.textContent = p.remaining_min != null ? formatMinutes(p.remaining_min) + ' verbleibend' : (p.elapsed_min != null ? formatMinutes(p.elapsed_min) + ' vergangen' : '')
-
-      const nozzleEl = q('nozzle')
-      if (nozzleEl && p.nozzle_temp != null) nozzleEl.textContent = `${p.nozzle_temp}°`
-
-      const bedEl = q('bed')
-      if (bedEl && p.bed_temp != null) bedEl.textContent = `${p.bed_temp}°`
-
-      const layerEl = q('layer')
-      if (layerEl && p.layer != null) layerEl.textContent = `Layer ${p.layer} / ${p.total_layers}`
-
+      const jobEl = q('job'); if (jobEl) jobEl.textContent = p.job_name || 'Unbekannt'
+      const barEl = q('bar') as HTMLElement | null; if (barEl) barEl.style.width = `${pct}%`
+      const pctEl = q('pct'); if (pctEl) pctEl.textContent = `${pct}%`
+      const timeEl = q('time'); if (timeEl) timeEl.textContent = p.remaining_min != null ? formatMinutes(p.remaining_min) : ''
+      const nozzleEl = q('nozzle'); if (nozzleEl && p.nozzle_temp != null) nozzleEl.innerHTML = `${Math.round(p.nozzle_temp)}°<span class="pm-stat-muted">/${p.nozzle_target ? Math.round(p.nozzle_target) : '-'}°</span>`
+      const bedEl = q('bed'); if (bedEl && p.bed_temp != null) bedEl.innerHTML = `${Math.round(p.bed_temp)}°<span class="pm-stat-muted">/${p.bed_target ? Math.round(p.bed_target) : '-'}°</span>`
+      const layerEl = q('layer'); if (layerEl && p.layer != null) layerEl.textContent = `L${p.layer}/${p.total_layers}`
       const camImg = el.querySelector(`img[data-cam-id="${p.id}"]`) as HTMLImageElement | null
       if (camImg) camImg.src = `/api/v1/printers/${p.id}/camera?t=${Date.now()}`
     }
