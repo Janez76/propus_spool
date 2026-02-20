@@ -3,7 +3,7 @@ import Layout from '../../layouts/Layout.astro'
 ---
 
 <Layout title="Propus Spool - Manufacturers">
-  <style>
+  <style is:global>
     .sortable { cursor: pointer; user-select: none; }
     .sortable:hover { background: var(--bg-hover); }
     .sortable::after { content: ' \2195'; opacity: 0.3; font-size: 0.8em; }
