@@ -383,13 +383,10 @@ class SpoolmanImportService:
             if not name:
                 continue
 
-            # Pruefen ob Location mit gleichem Namen oder Spoolman-ID existiert
-            # Wir nutzen json_extract für maximale Kompatibilität (besonders SQLite)
             existing = await self.db.execute(
                 select(Location).where(
                     (Location.name == name) |
-                    (func.json_extract(Location.custom_fields, '$.spoolman_id') == spoolman_id) |
-                    (func.json_extract(Location.custom_fields, '$.spoolman_id') == str(spoolman_id))
+                    (func.json_extract_path_text(Location.custom_fields, 'spoolman_id') == str(spoolman_id))
                 )
             )
             existing_loc = existing.scalar_one_or_none()
@@ -446,13 +443,10 @@ class SpoolmanImportService:
             if not name:
                 continue
 
-            # Pruefen ob Manufacturer mit gleichem Namen oder Spoolman-ID existiert
-            # Wir nutzen json_extract für maximale Kompatibilität (besonders SQLite)
             existing = await self.db.execute(
                 select(Manufacturer).where(
                     (Manufacturer.name == name) |
-                    (func.json_extract(Manufacturer.custom_fields, '$.spoolman_id') == spoolman_id) |
-                    (func.json_extract(Manufacturer.custom_fields, '$.spoolman_id') == str(spoolman_id))
+                    (func.json_extract_path_text(Manufacturer.custom_fields, 'spoolman_id') == str(spoolman_id))
                 )
             )
             existing_mfr = existing.scalar_one_or_none()
@@ -543,8 +537,7 @@ class SpoolmanImportService:
             if spoolman_id:
                 existing_fil_res = await self.db.execute(
                     select(Filament).where(
-                        (func.json_extract(Filament.custom_fields, '$.spoolman_id') == spoolman_id) |
-                        (func.json_extract(Filament.custom_fields, '$.spoolman_id') == str(spoolman_id))
+                        func.json_extract_path_text(Filament.custom_fields, 'spoolman_id') == str(spoolman_id)
                     )
                 )
                 existing_fil = existing_fil_res.scalar_one_or_none()
@@ -829,8 +822,7 @@ class SpoolmanImportService:
                 dup_check = await self.db.execute(
                     select(Spool).where(
                         (Spool.external_id == external_id) |
-                        (func.json_extract(Spool.custom_fields, '$.spoolman_id') == spoolman_id) |
-                        (func.json_extract(Spool.custom_fields, '$.spoolman_id') == str(spoolman_id))
+                        (func.json_extract_path_text(Spool.custom_fields, 'spoolman_id') == str(spoolman_id))
                     )
                 )
                 if dup_check.scalar_one_or_none():
