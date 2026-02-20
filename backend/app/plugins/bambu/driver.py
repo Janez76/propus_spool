@@ -183,7 +183,8 @@ class Driver(BaseDriver):
                 slot_no = int(tray.get("id", 0)) + 1
                 tag_uid = tray.get("tag_uid", "")
                 tray_type = tray.get("tray_type", "")
-                has_content = bool(tray_type and tag_uid and tag_uid.replace("0", ""))
+                has_rfid = bool(tag_uid and tag_uid.replace("0", ""))
+                has_content = bool(tray_type)
 
                 slot_data: dict[str, Any] = {
                     "slot_no": slot_no,
@@ -191,7 +192,8 @@ class Driver(BaseDriver):
                 }
 
                 if has_content:
-                    slot_data["rfid_uid"] = tag_uid
+                    if has_rfid:
+                        slot_data["rfid_uid"] = tag_uid
                     tray_uuid = tray.get("tray_uuid", "")
                     if tray_uuid and tray_uuid.replace("0", ""):
                         slot_data["external_id"] = f"bambu:{tray_uuid}"
