@@ -499,18 +499,6 @@ interface PaginatedResponse<T> {
     </div>
   </div>
 
-  <script is:inline>
-    window.__dbgLog = [];
-    window.__dbg = function(msg) {
-      window.__dbgLog.push(Date.now() + ': ' + msg);
-      var el = document.getElementById('spool-status');
-      if (el) el.innerHTML = '<pre style="color:#22d3ee;font-size:0.7rem;margin:0;white-space:pre-wrap">' + window.__dbgLog.join('\n') + '</pre>';
-    };
-    window.addEventListener('error', function(e) { window.__dbg('GLOBAL ERROR: ' + e.message + ' @ ' + e.filename + ':' + e.lineno); });
-    window.addEventListener('unhandledrejection', function(e) { window.__dbg('UNHANDLED REJECTION: ' + (e.reason && e.reason.stack || e.reason)); });
-    window.__dbg('inline script ok');
-  </script>
-
   <script>
     import { t, initI18n } from '../lib/i18n'
 
@@ -729,10 +717,9 @@ interface PaginatedResponse<T> {
       location_change: { icon: '📍', bg: 'rgba(244, 114, 182, 0.15)' },
       adjust: { icon: '✏', bg: 'rgba(251, 191, 36, 0.15)' },
       create: { icon: '✚', bg: 'rgba(0, 212, 170, 0.15)' },
-    }
+    };
 
-    // ── Modal functions ────────────────────────────────────────────
-    (window as any).openSpoolModal = function(type: 'low' | 'empty') {
+    ;(window as any).openSpoolModal = function(type: 'low' | 'empty') {
       const modal = document.getElementById('spool-modal') as HTMLElement
       const title = document.getElementById('modal-title') as HTMLElement
       const content = document.getElementById('modal-content') as HTMLElement
@@ -827,7 +814,7 @@ interface PaginatedResponse<T> {
         if (btn) { btn.disabled = false; btn.textContent = t('dashboard.archive') }
       }
     }
-    (window as any).archiveSpool = archiveSpool
+    ;(window as any).archiveSpool = archiveSpool
 
     async function archiveAll(ids: number[]) {
       if (!(await (window as any).__fmConfirm(t('dashboard.confirmArchiveAll'), { 
@@ -857,7 +844,7 @@ interface PaginatedResponse<T> {
         bulkBtn.disabled = false
       }
     }
-    (window as any).archiveAll = archiveAll
+    ;(window as any).archiveAll = archiveAll
 
     ;(window as any).closeSpoolModal = function() {
       document.getElementById('spool-modal')!.classList.remove('open')
@@ -876,21 +863,14 @@ interface PaginatedResponse<T> {
 
     // ── Load data ──────────────────────────────────────────────────
     async function loadDashboardData() {
-      const dbg = (window as any).__dbg
       try {
-        dbg?.('loadDashboardData: fetching...')
-        const controller = new AbortController()
-        const timeout = setTimeout(() => controller.abort(), 15000)
-
         const [spoolsRes, filamentsRes, dashboardRes] = await Promise.all([
-          fetch('/api/v1/spools?page_size=200', { credentials: 'include', signal: controller.signal }),
-          fetch('/api/v1/filaments?page_size=200', { credentials: 'include', signal: controller.signal }),
-          fetch('/api/v1/dashboard/stats?limit=20', { credentials: 'include', signal: controller.signal }),
+          fetch('/api/v1/spools?page_size=200', { credentials: 'include' }),
+          fetch('/api/v1/filaments?page_size=200', { credentials: 'include' }),
+          fetch('/api/v1/dashboard/stats?limit=20', { credentials: 'include' }),
         ])
-        clearTimeout(timeout)
         
-        dbg?.(`API responses: spools=${spoolsRes.status} filaments=${filamentsRes.status} dashboard=${dashboardRes.status}`)
-        if (!spoolsRes.ok || !filamentsRes.ok) throw new Error(`Fetch failed: spools=${spoolsRes.status} filaments=${filamentsRes.status}`)
+        if (!spoolsRes.ok || !filamentsRes.ok) throw new Error('Failed to fetch data')
         
         const spoolsData = await spoolsRes.json()
         const filamentsData = await filamentsRes.json()
@@ -1116,16 +1096,13 @@ interface PaginatedResponse<T> {
         }
       } catch (error) {
         console.error('Failed to load dashboard:', error)
-        ;(window as any).__dbg?.('loadDashboardData ERROR: ' + (error instanceof Error ? error.stack || error.message : String(error)))
       }
     }
 
     // ── Init ───────────────────────────────────────────────────────
     async function init() {
       try {
-        (window as any).__dbg?.('module loaded, init() called')
         await initI18n()
-        ;(window as any).__dbg?.('initI18n done')
         WIDGET_NAMES['total-weight'] = t('dashboard.weightOverview')
         WIDGET_NAMES['low-stock'] = t('dashboard.lowStockSpools')
         WIDGET_NAMES['color-distribution'] = t('dashboard.colorDistribution')
@@ -1136,13 +1113,10 @@ interface PaginatedResponse<T> {
         WIDGET_NAMES['location-stats'] = t('dashboard.locationStats')
         WIDGET_NAMES['filament-stats'] = t('dashboard.filamentStats')
 
-        ;(window as any).__dbg?.('applying widget order')
         applyWidgetOrder()
         applyWidgetVisibility()
         setupDragAndDrop()
-        ;(window as any).__dbg?.('calling loadDashboardData')
         await loadDashboardData()
-        ;(window as any).__dbg?.('loadDashboardData done')
       } catch (err) {
         console.error('Dashboard init failed:', err)
         document.querySelector('.widget-grid')!.insertAdjacentHTML('afterbegin',
