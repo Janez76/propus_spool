@@ -491,10 +491,10 @@ class PluginInstallService:
         existing = result.scalar_one_or_none()
 
         if existing:
-            # Update metadata if version changed
             existing.name = name
             existing.version = version
             existing.description = description
+            existing.author = author
             existing.plugin_type = plugin_type
             existing.page_url = page_url
             existing.homepage = homepage
