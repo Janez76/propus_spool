@@ -208,16 +208,16 @@ interface PaginatedResponse<T> {
 
     .spool-chart-wrap {
       display: flex;
-      align-items: center;
-      gap: 16px;
+      align-items: flex-start;
+      gap: 14px;
     }
     .spool-donut {
       position: relative;
-      width: 110px;
-      height: 110px;
+      width: 90px;
+      height: 90px;
       flex-shrink: 0;
     }
-    .spool-donut svg { width: 100%; height: 100%; }
+    .spool-donut svg { width: 100%; height: 100%; display: block; }
     .spool-donut-segment {
       transition: opacity 0.2s ease, filter 0.2s ease;
       cursor: pointer;
@@ -234,13 +234,13 @@ interface PaginatedResponse<T> {
       pointer-events: none;
     }
     .spool-donut-total {
-      font-size: 1.2rem;
+      font-size: 1.1rem;
       font-weight: 800;
       line-height: 1;
       transition: color 0.15s ease;
     }
     .spool-donut-sublabel {
-      font-size: 0.55rem;
+      font-size: 0.5rem;
       color: var(--text-muted);
       margin-top: 1px;
       text-transform: uppercase;
@@ -249,16 +249,16 @@ interface PaginatedResponse<T> {
     .spool-legend {
       display: flex;
       flex-direction: column;
-      gap: 2px;
+      gap: 1px;
       flex: 1;
       min-width: 0;
     }
     .spool-legend-item {
       display: flex;
       align-items: center;
-      gap: 8px;
-      padding: 4px 6px;
-      border-radius: var(--radius-sm);
+      gap: 7px;
+      padding: 3px 5px;
+      border-radius: 4px;
       cursor: pointer;
       transition: background 0.15s ease;
     }
@@ -269,22 +269,23 @@ interface PaginatedResponse<T> {
       height: 8px;
       border-radius: 50%;
       flex-shrink: 0;
+      display: inline-block;
     }
     .spool-legend-info {
       flex: 1;
       min-width: 0;
     }
     .spool-legend-label {
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       font-weight: 500;
       color: var(--text);
-      line-height: 1.2;
+      line-height: 1;
     }
     .spool-legend-bar {
       height: 3px;
       background: var(--bg-soft);
       border-radius: 2px;
-      margin-top: 2px;
+      margin-top: 3px;
       overflow: hidden;
     }
     .spool-legend-bar-fill {
@@ -293,15 +294,15 @@ interface PaginatedResponse<T> {
       transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
     .spool-legend-count {
-      font-size: 0.8rem;
+      font-size: 0.75rem;
       font-weight: 700;
-      min-width: 20px;
+      min-width: 18px;
       text-align: right;
     }
     .spool-legend-pct {
       font-size: 0.6rem;
       color: var(--text-muted);
-      min-width: 28px;
+      min-width: 26px;
       text-align: right;
     }
 
@@ -986,7 +987,7 @@ interface PaginatedResponse<T> {
           ];
           
           if (total > 0) {
-            const R = 42, CX = 55, CY = 55, SW = 14;
+            const R = 34, CX = 45, CY = 45, SW = 12;
             const C = 2 * Math.PI * R;
             let offset = 0;
             const arcs = segments.filter(s => s.count > 0).map(s => {
@@ -1001,7 +1002,7 @@ interface PaginatedResponse<T> {
             statusContainer.innerHTML = `
               <div class="spool-chart-wrap">
                 <div class="spool-donut" id="spool-donut">
-                  <svg viewBox="0 0 110 110" style="transform: rotate(-90deg);">
+                  <svg viewBox="0 0 90 90" style="transform: rotate(-90deg);">
                     <circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="var(--border-subtle)" stroke-width="${SW}" opacity="0.3" />
                     ${arcs.join('')}
                   </svg>
