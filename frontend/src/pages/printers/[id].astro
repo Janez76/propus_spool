@@ -222,15 +222,20 @@ const { id } = Astro.params
           const clickAttr = `data-unit-id="${unit.id}" data-slot-no="${slotNo}" data-spool-id="${spoolId || ''}"`
 
           if (present) {
-            const colorSwatch = colorHex
-              ? `<span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:#${colorHex.substring(0,6)};border:1px solid rgba(255,255,255,0.2);vertical-align:middle;margin-right:4px;"></span>`
+            const colorCode = colorHex ? colorHex.substring(0, 6) : ''
+            const colorSwatch = colorCode
+              ? `<span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:#${colorCode};border:1px solid rgba(255,255,255,0.2);vertical-align:middle;margin-right:4px;"></span>`
               : ''
-            const remainText = remain != null ? `${remain}%` : ''
+            const remainText = (remain != null && remain >= 0) ? `${remain}%` : ''
+            const designation = meta.designation || ''
+            const displayName = designation || material || '?'
+            const subInfo = designation && material ? material : ''
             const spoolLabel = spoolId ? `<div style="font-size:0.65rem;color:var(--accent-2);margin-top:2px;">Spool #${spoolId}</div>` : ''
             return `
-              <div class="slot-card" ${clickAttr} style="padding: 12px; background: var(--bg-soft); border-radius: var(--radius-sm); text-align: center; border: 1px solid var(--accent-2); cursor: pointer; transition: transform 0.1s;" onmouseenter="this.style.transform='scale(1.03)'" onmouseleave="this.style.transform='scale(1)'">
+              <div class="slot-card" ${clickAttr} style="padding: 12px; background: var(--bg-soft); border-radius: var(--radius-sm); text-align: center; border: 1px solid ${colorCode ? '#' + colorCode : 'var(--accent-2)'}; cursor: pointer; transition: transform 0.1s;" onmouseenter="this.style.transform='scale(1.03)'" onmouseleave="this.style.transform='scale(1)'">
                 <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;">${t('printers.slotLabel', { no: slotNo })}</div>
-                <div style="font-size: 0.9rem; font-weight: 600; margin-bottom: 2px;">${colorSwatch}${material || '?'}</div>
+                <div style="font-size: 0.9rem; font-weight: 600; margin-bottom: 2px;">${colorSwatch}${displayName}</div>
+                ${subInfo ? `<div style="font-size: 0.7rem; color: var(--text-muted);">${subInfo}</div>` : ''}
                 ${remainText ? `<div style="font-size: 0.75rem; color: var(--text-muted);">${remainText}</div>` : ''}
                 ${spoolLabel}
               </div>`

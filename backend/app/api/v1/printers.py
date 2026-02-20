@@ -5,7 +5,7 @@ from sqlalchemy.orm import selectinload
 
 from app.api.deps import DBSession, PrincipalDep, RequirePermission
 from app.api.v1.schemas import PaginatedResponse
-from app.models import Location, Printer, PrinterAmsUnit, PrinterSlot, PrinterSlotAssignment, Spool
+from app.models import Filament, FilamentColor, Color, Location, Printer, PrinterAmsUnit, PrinterSlot, PrinterSlotAssignment, Spool
 
 router = APIRouter(prefix="/printers", tags=["printers"])
 
@@ -305,10 +305,41 @@ async def assign_spool_to_slot(
     if not ams_unit:
         raise HTTPException(status_code=404, detail={"code": "not_found", "message": "AMS unit not found"})
 
+    spool_meta: dict | None = None
     if body.spool_id is not None:
-        result = await db.execute(select(Spool).where(Spool.id == body.spool_id, Spool.deleted_at.is_(None)))
-        if not result.scalar_one_or_none():
+        result = await db.execute(
+            select(Spool)
+            .where(Spool.id == body.spool_id, Spool.deleted_at.is_(None))
+            .options(
+                selectinload(Spool.filament).selectinload(Filament.filament_colors).selectinload(FilamentColor.color)
+            )
+        )
+        spool = result.scalar_one_or_none()
+        if not spool:
             raise HTTPException(status_code=400, detail={"code": "validation_error", "message": "Spool not found"})
+
+        fil = spool.filament
+        color_hex = ""
+        if fil and fil.filament_colors:
+            first_color = sorted(fil.filament_colors, key=lambda c: c.position)[0]
+            if first_color.color:
+                color_hex = first_color.color.hex_code.lstrip("#") + "FF"
+
+        remain_pct = None
+        if spool.remaining_weight_g is not None and spool.initial_total_weight_g:
+            empty = spool.empty_spool_weight_g or 0
+            net_initial = spool.initial_total_weight_g - empty
+            if net_initial > 0:
+                remain_pct = round((spool.remaining_weight_g / net_initial) * 100)
+
+        spool_meta = {
+            "material": fil.type if fil else "",
+            "designation": fil.designation if fil else "",
+            "color_hex": color_hex,
+            "remain_percent": remain_pct,
+            "weight_g": str(int(spool.remaining_weight_g)) if spool.remaining_weight_g else None,
+            "source": "manual",
+        }
 
     result = await db.execute(
         select(PrinterSlot).where(
@@ -343,6 +374,7 @@ async def assign_spool_to_slot(
         assignment.spool_id = body.spool_id
         assignment.present = True
         assignment.inserted_at = dt.utcnow()
+        assignment.meta = spool_meta
     else:
         assignment.spool_id = None
         assignment.present = False
