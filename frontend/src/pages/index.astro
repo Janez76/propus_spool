@@ -1097,6 +1097,8 @@ interface PaginatedResponse<T> {
         }
       } catch (error) {
         console.error('Failed to load dashboard:', error)
+        const errEl = document.getElementById('spool-status')
+        if (errEl) errEl.innerHTML = `<p style="color: #ef4444; font-size: 0.85rem;">Error: ${error instanceof Error ? error.message : String(error)}</p>`
       }
     }
 
