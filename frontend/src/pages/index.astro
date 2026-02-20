@@ -1364,7 +1364,16 @@ interface PaginatedResponse<T> {
       }
     }
 
-    // ── Printer Monitor ──────────────────────────────────────────
+    // ── Printer Monitor (incremental DOM updates) ───────────────
+    const PM_COLORS: Record<string, string> = {
+      printing: '#10b981', idle: '#6b7280', paused: '#eab308',
+      error: '#ef4444', preparing: '#38bdf8', offline: '#4b5563'
+    }
+    const PM_LABELS: Record<string, string> = {
+      printing: 'Druckt', idle: 'Bereit', paused: 'Pause',
+      error: 'Fehler', preparing: 'Vorbereitung', offline: 'Offline'
+    }
+
     function formatMinutes(min: number | null | undefined): string {
       if (min == null || min <= 0) return '--'
       const h = Math.floor(min / 60)
@@ -1372,33 +1381,39 @@ interface PaginatedResponse<T> {
       return h > 0 ? `${h}h ${m}m` : `${m}m`
     }
 
-    function renderPrinterCard(p: any): string {
-      const stateColors: Record<string, string> = {
-        printing: '#10b981', idle: '#6b7280', paused: '#eab308',
-        error: '#ef4444', preparing: '#38bdf8', offline: '#4b5563'
-      }
-      const stateLabels: Record<string, string> = {
-        printing: 'Druckt', idle: 'Bereit', paused: 'Pause',
-        error: 'Fehler', preparing: 'Vorbereitung', offline: 'Offline'
-      }
-      const dotColor = stateColors[p.state] || '#6b7280'
-      const badgeClass = p.state || 'offline'
-      const stateLabel = stateLabels[p.state] || p.state
+    function isActive(state: string) {
+      return state === 'printing' || state === 'paused' || state === 'preparing'
+    }
 
-      if (p.state !== 'printing' && p.state !== 'paused' && p.state !== 'preparing') {
-        return `
+    let pmLastIds: string = ''
+    let pmLastStates: Record<number, string> = {}
+
+    function pmCreateCard(p: any): HTMLElement {
+      const el = document.createElement('div')
+      el.setAttribute('data-pm-id', String(p.id))
+      pmFillCard(el, p)
+      return el
+    }
+
+    function pmFillCard(el: HTMLElement, p: any) {
+      const dotColor = PM_COLORS[p.state] || '#6b7280'
+      const badgeClass = p.state || 'offline'
+      const stateLabel = PM_LABELS[p.state] || p.state
+
+      if (!isActive(p.state)) {
+        el.className = ''
+        el.innerHTML = `
           <div class="pm-idle-row" onclick="window.location.href='/printers/${p.id}'">
             <span class="pm-status-dot" style="background: ${dotColor};"></span>
             <span class="pm-name">${p.name}</span>
             <span class="pm-badge ${badgeClass}">${stateLabel}</span>
           </div>`
+        return
       }
 
-      const cameraHtml = p.has_camera ? `<img class="pm-camera" src="/api/v1/printers/${p.id}/camera?t=${Date.now()}" alt="Camera" onerror="this.style.display='none'" />` : ''
-      const progressPct = p.progress_pct ?? 0
-      const layerHtml = (p.layer != null && p.total_layers != null) ? `<div class="pm-layer">Layer ${p.layer} / ${p.total_layers}</div>` : ''
-
-      return `
+      const pct = p.progress_pct ?? 0
+      el.className = ''
+      el.innerHTML = `
         <div class="pm-card" onclick="window.location.href='/monitoring'" style="cursor: pointer;">
           <div class="pm-card-header">
             <span class="pm-status-dot" style="background: ${dotColor};"></span>
@@ -1406,59 +1421,98 @@ interface PaginatedResponse<T> {
             <span class="pm-badge ${badgeClass}">${stateLabel}</span>
           </div>
           <div class="pm-content">
-            ${cameraHtml}
+            ${p.has_camera ? `<img class="pm-camera" data-cam-id="${p.id}" src="/api/v1/printers/${p.id}/camera?t=${Date.now()}" alt="Camera" onerror="this.style.display='none'" />` : ''}
             <div class="pm-info">
-              <div class="pm-job">${p.job_name || 'Unbekannt'}</div>
+              <div class="pm-job" data-field="job">${p.job_name || 'Unbekannt'}</div>
               <div class="pm-progress-wrap">
-                <div class="pm-progress-bar">
-                  <div class="pm-progress-fill" style="width: ${progressPct}%;"></div>
-                </div>
+                <div class="pm-progress-bar"><div class="pm-progress-fill" data-field="bar" style="width: ${pct}%;"></div></div>
                 <div class="pm-progress-text">
-                  <span>${progressPct}%</span>
-                  <span>${p.remaining_min != null ? formatMinutes(p.remaining_min) + ' verbleibend' : (p.elapsed_min != null ? formatMinutes(p.elapsed_min) + ' vergangen' : '')}</span>
+                  <span data-field="pct">${pct}%</span>
+                  <span data-field="time">${p.remaining_min != null ? formatMinutes(p.remaining_min) + ' verbleibend' : (p.elapsed_min != null ? formatMinutes(p.elapsed_min) + ' vergangen' : '')}</span>
                 </div>
               </div>
               <div class="pm-temps">
-                ${p.nozzle_temp != null ? `
-                  <div class="pm-temp-item">
-                    <svg class="pm-temp-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg>
-                    <span class="pm-temp-val">${p.nozzle_temp}°</span>
-                    ${p.nozzle_target ? `<span class="pm-temp-target">/${p.nozzle_target}°</span>` : ''}
-                  </div>` : ''}
-                ${p.bed_temp != null ? `
-                  <div class="pm-temp-item">
-                    <svg class="pm-temp-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/></svg>
-                    <span class="pm-temp-val">${p.bed_temp}°</span>
-                    ${p.bed_target ? `<span class="pm-temp-target">/${p.bed_target}°</span>` : ''}
-                  </div>` : ''}
+                ${p.nozzle_temp != null ? `<div class="pm-temp-item"><svg class="pm-temp-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg><span class="pm-temp-val" data-field="nozzle">${p.nozzle_temp}°</span>${p.nozzle_target ? `<span class="pm-temp-target">/${p.nozzle_target}°</span>` : ''}</div>` : ''}
+                ${p.bed_temp != null ? `<div class="pm-temp-item"><svg class="pm-temp-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/></svg><span class="pm-temp-val" data-field="bed">${p.bed_temp}°</span>${p.bed_target ? `<span class="pm-temp-target">/${p.bed_target}°</span>` : ''}</div>` : ''}
               </div>
-              ${layerHtml}
+              ${(p.layer != null && p.total_layers != null) ? `<div class="pm-layer" data-field="layer">Layer ${p.layer} / ${p.total_layers}</div>` : ''}
             </div>
           </div>
         </div>`
+    }
+
+    function pmUpdateCard(el: HTMLElement, p: any) {
+      const prevState = pmLastStates[p.id]
+      if (prevState !== p.state || (isActive(p.state) !== isActive(prevState || ''))) {
+        pmFillCard(el, p)
+        pmLastStates[p.id] = p.state
+        return
+      }
+      pmLastStates[p.id] = p.state
+
+      if (!isActive(p.state)) return
+
+      const pct = p.progress_pct ?? 0
+      const q = (sel: string) => el.querySelector(`[data-field="${sel}"]`) as HTMLElement | null
+
+      const jobEl = q('job')
+      if (jobEl) jobEl.textContent = p.job_name || 'Unbekannt'
+
+      const barEl = q('bar') as HTMLElement | null
+      if (barEl) barEl.style.width = `${pct}%`
+
+      const pctEl = q('pct')
+      if (pctEl) pctEl.textContent = `${pct}%`
+
+      const timeEl = q('time')
+      if (timeEl) timeEl.textContent = p.remaining_min != null ? formatMinutes(p.remaining_min) + ' verbleibend' : (p.elapsed_min != null ? formatMinutes(p.elapsed_min) + ' vergangen' : '')
+
+      const nozzleEl = q('nozzle')
+      if (nozzleEl && p.nozzle_temp != null) nozzleEl.textContent = `${p.nozzle_temp}°`
+
+      const bedEl = q('bed')
+      if (bedEl && p.bed_temp != null) bedEl.textContent = `${p.bed_temp}°`
+
+      const layerEl = q('layer')
+      if (layerEl && p.layer != null) layerEl.textContent = `Layer ${p.layer} / ${p.total_layers}`
+
+      const camImg = el.querySelector(`img[data-cam-id="${p.id}"]`) as HTMLImageElement | null
+      if (camImg) camImg.src = `/api/v1/printers/${p.id}/camera?t=${Date.now()}`
     }
 
     async function loadPrinterMonitor() {
       try {
         const res = await fetch('/api/v1/printers/status', { credentials: 'include' })
         if (!res.ok) return
-        const printers = await res.json()
+        const printers = await res.json() as any[]
         const container = document.getElementById('printer-monitor')
         if (!container) return
 
         if (printers.length === 0) {
-          container.innerHTML = '<p style="color: var(--text-muted); font-size: 0.85rem;">Keine Drucker</p>'
+          if (container.children.length !== 1 || !container.querySelector('p')) {
+            container.innerHTML = '<p style="color: var(--text-muted); font-size: 0.85rem;">Keine Drucker</p>'
+          }
           return
         }
 
-        const active = printers.filter((p: any) => p.state === 'printing' || p.state === 'paused' || p.state === 'preparing')
-        const idle = printers.filter((p: any) => p.state !== 'printing' && p.state !== 'paused' && p.state !== 'preparing')
+        const sorted = [...printers.filter(p => isActive(p.state)), ...printers.filter(p => !isActive(p.state))]
+        const newIdKey = sorted.map(p => `${p.id}:${isActive(p.state) ? 'a' : 'i'}`).join(',')
 
-        let html = active.map((p: any) => renderPrinterCard(p)).join('')
-        if (idle.length > 0) {
-          html += idle.map((p: any) => renderPrinterCard(p)).join('')
+        if (newIdKey !== pmLastIds) {
+          container.innerHTML = ''
+          for (const p of sorted) {
+            container.appendChild(pmCreateCard(p))
+            pmLastStates[p.id] = p.state
+          }
+          pmLastIds = newIdKey
+        } else {
+          for (const p of sorted) {
+            const existing = container.querySelector(`[data-pm-id="${p.id}"]`) as HTMLElement | null
+            if (existing) {
+              pmUpdateCard(existing, p)
+            }
+          }
         }
-        container.innerHTML = html
       } catch (e) {
         console.debug('Printer monitor fetch error:', e)
       }

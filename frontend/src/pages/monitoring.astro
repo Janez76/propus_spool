@@ -222,108 +222,124 @@ import Layout from '../layouts/Layout.astro'
       return h > 0 ? `${h}h ${m}m` : `${m}m`
     }
 
-    function renderMonCard(p: any): string {
+    function monIsActive(state: string): boolean {
+      return state === 'printing' || state === 'paused' || state === 'preparing'
+    }
+
+    let monLastIds = ''
+    let monLastStates: Record<number, string> = {}
+
+    function monBuildCard(p: any): HTMLDivElement {
+      const card = document.createElement('div')
+      card.className = 'mon-card'
+      card.setAttribute('data-mon-id', String(p.id))
+      monRenderCard(card, p)
+      return card
+    }
+
+    function monRenderCard(card: HTMLElement, p: any) {
       const dotColor = STATE_COLORS[p.state] || '#6b7280'
       const label = STATE_LABELS[p.state] || p.state
       const badgeCls = p.state || 'offline'
-      const isActive = p.state === 'printing' || p.state === 'paused' || p.state === 'preparing'
+      const active = monIsActive(p.state)
 
       let bodyHtml: string
-      if (!isActive) {
-        bodyHtml = `
-          <div class="mon-idle-body">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" opacity="0.4"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-            Kein aktiver Druck
-          </div>`
+      if (!active) {
+        bodyHtml = `<div class="mon-idle-body"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" opacity="0.4"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>Kein aktiver Druck</div>`
       } else {
         const pct = p.progress_pct ?? 0
-        const cameraHtml = p.has_camera
-          ? `<div class="mon-camera-wrap"><img class="mon-camera" src="/api/v1/printers/${p.id}/camera?t=${Date.now()}" alt="Kamera" onerror="this.parentElement.innerHTML='<div class=\\'mon-no-camera\\'>Kamera nicht verfügbar</div>'" /></div>`
+        const camHtml = p.has_camera
+          ? `<div class="mon-camera-wrap"><img class="mon-camera" data-cam="${p.id}" src="/api/v1/printers/${p.id}/camera?t=${Date.now()}" alt="Kamera" onerror="this.style.display='none'" /></div>`
           : `<div class="mon-camera-wrap"><div class="mon-no-camera"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" opacity="0.4"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Keine Kamera</div></div>`
-
-        const statsItems: string[] = []
-        if (p.nozzle_temp != null) {
-          statsItems.push(`
-            <div class="mon-stat">
-              <div class="mon-stat-label">Düse</div>
-              <div class="mon-stat-val">${p.nozzle_temp}°C</div>
-              ${p.nozzle_target ? `<div class="mon-stat-sub">Ziel: ${p.nozzle_target}°C</div>` : ''}
-            </div>`)
-        }
-        if (p.bed_temp != null) {
-          statsItems.push(`
-            <div class="mon-stat">
-              <div class="mon-stat-label">Bett</div>
-              <div class="mon-stat-val">${p.bed_temp}°C</div>
-              ${p.bed_target ? `<div class="mon-stat-sub">Ziel: ${p.bed_target}°C</div>` : ''}
-            </div>`)
-        }
-        if (p.remaining_min != null) {
-          statsItems.push(`
-            <div class="mon-stat">
-              <div class="mon-stat-label">Restzeit</div>
-              <div class="mon-stat-val">${fmtMin(p.remaining_min)}</div>
-            </div>`)
-        } else if (p.elapsed_min != null) {
-          statsItems.push(`
-            <div class="mon-stat">
-              <div class="mon-stat-label">Vergangen</div>
-              <div class="mon-stat-val">${fmtMin(p.elapsed_min)}</div>
-            </div>`)
-        }
-        if (p.layer != null && p.total_layers != null) {
-          statsItems.push(`
-            <div class="mon-stat">
-              <div class="mon-stat-label">Layer</div>
-              <div class="mon-stat-val">${p.layer}/${p.total_layers}</div>
-            </div>`)
-        }
 
         bodyHtml = `
           <div class="mon-card-body">
-            ${cameraHtml}
-            <div class="mon-job">${p.job_name || 'Unbekannter Druckjob'}</div>
-            <div class="mon-progress-bar">
-              <div class="mon-progress-fill" style="width: ${pct}%;"></div>
-            </div>
+            ${camHtml}
+            <div class="mon-job" data-f="job">${p.job_name || 'Unbekannter Druckjob'}</div>
+            <div class="mon-progress-bar"><div class="mon-progress-fill" data-f="bar" style="width: ${pct}%;"></div></div>
             <div class="mon-progress-text">
-              <span>${pct}% abgeschlossen</span>
-              <span>${p.remaining_min != null ? fmtMin(p.remaining_min) + ' verbleibend' : ''}</span>
+              <span data-f="pct">${pct}% abgeschlossen</span>
+              <span data-f="time">${p.remaining_min != null ? fmtMin(p.remaining_min) + ' verbleibend' : ''}</span>
             </div>
-            ${statsItems.length > 0 ? `<div class="mon-stats">${statsItems.join('')}</div>` : ''}
+            <div class="mon-stats">
+              ${p.nozzle_temp != null ? `<div class="mon-stat"><div class="mon-stat-label">Düse</div><div class="mon-stat-val" data-f="nozzle">${p.nozzle_temp}°C</div>${p.nozzle_target ? `<div class="mon-stat-sub" data-f="nozzle-t">Ziel: ${p.nozzle_target}°C</div>` : ''}</div>` : ''}
+              ${p.bed_temp != null ? `<div class="mon-stat"><div class="mon-stat-label">Bett</div><div class="mon-stat-val" data-f="bed">${p.bed_temp}°C</div>${p.bed_target ? `<div class="mon-stat-sub" data-f="bed-t">Ziel: ${p.bed_target}°C</div>` : ''}</div>` : ''}
+              ${p.remaining_min != null ? `<div class="mon-stat"><div class="mon-stat-label">Restzeit</div><div class="mon-stat-val" data-f="remain">${fmtMin(p.remaining_min)}</div></div>` : (p.elapsed_min != null ? `<div class="mon-stat"><div class="mon-stat-label">Vergangen</div><div class="mon-stat-val" data-f="elapsed">${fmtMin(p.elapsed_min)}</div></div>` : '')}
+              ${(p.layer != null && p.total_layers != null) ? `<div class="mon-stat"><div class="mon-stat-label">Layer</div><div class="mon-stat-val" data-f="layer">${p.layer}/${p.total_layers}</div></div>` : ''}
+            </div>
           </div>`
       }
 
-      return `
-        <div class="mon-card">
-          <div class="mon-card-head">
-            <span class="mon-dot" style="background: ${dotColor};"></span>
-            <span class="mon-card-name">${p.name}</span>
-            ${p.model ? `<span class="mon-card-model">${p.model}</span>` : ''}
-            <span class="mon-badge ${badgeCls}">${label}</span>
-          </div>
-          ${bodyHtml}
-        </div>`
+      card.innerHTML = `
+        <div class="mon-card-head">
+          <span class="mon-dot" style="background: ${dotColor};"></span>
+          <span class="mon-card-name">${p.name}</span>
+          ${p.model ? `<span class="mon-card-model">${p.model}</span>` : ''}
+          <span class="mon-badge ${badgeCls}" data-f="badge">${label}</span>
+        </div>
+        ${bodyHtml}`
+    }
+
+    function monPatchCard(card: HTMLElement, p: any) {
+      const prev = monLastStates[p.id]
+      if (prev !== p.state || (monIsActive(p.state) !== monIsActive(prev || ''))) {
+        monRenderCard(card, p)
+        monLastStates[p.id] = p.state
+        return
+      }
+      monLastStates[p.id] = p.state
+      if (!monIsActive(p.state)) return
+
+      const q = (f: string) => card.querySelector(`[data-f="${f}"]`) as HTMLElement | null
+      const pct = p.progress_pct ?? 0
+
+      const jobEl = q('job'); if (jobEl) jobEl.textContent = p.job_name || 'Unbekannter Druckjob'
+      const barEl = q('bar'); if (barEl) barEl.style.width = `${pct}%`
+      const pctEl = q('pct'); if (pctEl) pctEl.textContent = `${pct}% abgeschlossen`
+      const timeEl = q('time'); if (timeEl) timeEl.textContent = p.remaining_min != null ? fmtMin(p.remaining_min) + ' verbleibend' : ''
+      const nozzleEl = q('nozzle'); if (nozzleEl && p.nozzle_temp != null) nozzleEl.textContent = `${p.nozzle_temp}°C`
+      const nozzleTEl = q('nozzle-t'); if (nozzleTEl && p.nozzle_target != null) nozzleTEl.textContent = `Ziel: ${p.nozzle_target}°C`
+      const bedEl = q('bed'); if (bedEl && p.bed_temp != null) bedEl.textContent = `${p.bed_temp}°C`
+      const bedTEl = q('bed-t'); if (bedTEl && p.bed_target != null) bedTEl.textContent = `Ziel: ${p.bed_target}°C`
+      const remainEl = q('remain'); if (remainEl) remainEl.textContent = fmtMin(p.remaining_min)
+      const elapsedEl = q('elapsed'); if (elapsedEl) elapsedEl.textContent = fmtMin(p.elapsed_min)
+      const layerEl = q('layer'); if (layerEl && p.layer != null) layerEl.textContent = `${p.layer}/${p.total_layers}`
+
+      const camImg = card.querySelector(`img[data-cam="${p.id}"]`) as HTMLImageElement | null
+      if (camImg) camImg.src = `/api/v1/printers/${p.id}/camera?t=${Date.now()}`
     }
 
     async function loadMonitoring() {
       try {
         const res = await fetch('/api/v1/printers/status', { credentials: 'include' })
         if (!res.ok) return
-        const printers = await res.json()
+        const printers = await res.json() as any[]
         const grid = document.getElementById('mon-grid')
         if (!grid) return
 
         if (printers.length === 0) {
-          grid.innerHTML = '<p style="color: var(--text-muted); font-size: 0.85rem; grid-column: 1/-1; text-align: center; padding: 40px 0;">Keine Drucker konfiguriert</p>'
+          if (!grid.querySelector('p')) {
+            grid.innerHTML = '<p style="color: var(--text-muted); font-size: 0.85rem; grid-column: 1/-1; text-align: center; padding: 40px 0;">Keine Drucker konfiguriert</p>'
+          }
           return
         }
 
-        const active = printers.filter((p: any) => p.state === 'printing' || p.state === 'paused' || p.state === 'preparing')
-        const idle = printers.filter((p: any) => p.state !== 'printing' && p.state !== 'paused' && p.state !== 'preparing')
-        const sorted = [...active, ...idle]
+        const sorted = [...printers.filter(p => monIsActive(p.state)), ...printers.filter(p => !monIsActive(p.state))]
+        const newIdKey = sorted.map(p => `${p.id}:${monIsActive(p.state)?1:0}`).join(',')
 
-        grid.innerHTML = sorted.map((p: any) => renderMonCard(p)).join('')
+        if (newIdKey !== monLastIds) {
+          grid.innerHTML = ''
+          for (const p of sorted) {
+            grid.appendChild(monBuildCard(p))
+            monLastStates[p.id] = p.state
+          }
+          monLastIds = newIdKey
+        } else {
+          for (const p of sorted) {
+            const existing = grid.querySelector(`[data-mon-id="${p.id}"]`) as HTMLElement | null
+            if (existing) monPatchCard(existing, p)
+          }
+        }
       } catch (e) {
         console.debug('Monitoring fetch error:', e)
       }
