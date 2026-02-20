@@ -85,6 +85,8 @@ class Driver(BaseDriver):
 
     async def _poll_loop(self) -> None:
         host = self.config["host"].rstrip("/")
+        if not host.startswith("http://") and not host.startswith("https://"):
+            host = f"http://{host}"
         api_key = self.config.get("api_key", "")
         headers = {}
         if api_key:
