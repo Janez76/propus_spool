@@ -49,16 +49,16 @@ import Layout from '../layouts/Layout.astro'
 
     /* Top row: name + badge */
     .mc-head {
-      display: flex; align-items: center; gap: 10px;
-      padding: 10px 16px;
+      display: flex; align-items: center; gap: 8px;
+      padding: 7px 12px;
       border-bottom: 1px solid var(--border-subtle);
     }
-    .mc-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-    .mc-name { font-weight: 600; font-size: 0.92rem; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .mc-model { font-size: 0.72rem; color: var(--text-muted); margin-left: 4px; }
+    .mc-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .mc-name { font-weight: 600; font-size: 0.82rem; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .mc-model { font-size: 0.68rem; color: var(--text-muted); margin-left: 4px; }
     .mc-badge {
-      font-size: 0.68rem; font-weight: 700; padding: 3px 10px;
-      border-radius: 12px; text-transform: uppercase; letter-spacing: 0.04em;
+      font-size: 0.6rem; font-weight: 700; padding: 2px 8px;
+      border-radius: 10px; text-transform: uppercase; letter-spacing: 0.04em;
       white-space: nowrap;
     }
     .mc-badge.printing { background: rgba(16,185,129,.15); color: #10b981; }
@@ -78,7 +78,7 @@ import Layout from '../layouts/Layout.astro'
 
     /* Camera panel */
     .mc-cam {
-      width: 200px;
+      width: 160px;
       background: #0a0a0a;
       display: flex; align-items: center; justify-content: center;
       overflow: hidden;
@@ -89,7 +89,7 @@ import Layout from '../layouts/Layout.astro'
       object-fit: cover; display: block;
     }
     .mc-cam-none {
-      width: 72px;
+      width: 40px;
       display: flex; align-items: center; justify-content: center;
       border-right: 1px solid var(--border-subtle);
       color: var(--text-muted); opacity: 0.3;
@@ -97,40 +97,40 @@ import Layout from '../layouts/Layout.astro'
 
     /* Info center */
     .mc-info {
-      padding: 12px 16px;
-      display: flex; flex-direction: column; gap: 6px;
+      padding: 8px 12px;
+      display: flex; flex-direction: column; gap: 4px;
       min-width: 0;
     }
     .mc-job {
-      display: flex; align-items: center; gap: 6px;
-      font-size: 0.82rem; font-weight: 600;
+      display: flex; align-items: center; gap: 5px;
+      font-size: 0.78rem; font-weight: 600;
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
     .mc-job svg { flex-shrink: 0; opacity: 0.5; }
     .mc-times {
-      display: flex; gap: 8px;
+      display: flex; gap: 6px;
     }
     .mc-time-box {
       background: var(--bg-soft);
       border-radius: var(--radius-sm);
-      padding: 4px 10px;
+      padding: 3px 8px;
       display: flex; flex-direction: column;
     }
     .mc-time-label {
-      font-size: 0.58rem; color: var(--text-muted);
+      font-size: 0.55rem; color: var(--text-muted);
       text-transform: uppercase; letter-spacing: 0.04em;
     }
     .mc-time-val {
-      font-size: 0.82rem; font-weight: 700;
+      font-size: 0.78rem; font-weight: 700;
       font-family: var(--font-mono);
     }
     .mc-progress {
-      height: 8px;
+      height: 6px;
       background: var(--bg-soft);
-      border-radius: 4px; overflow: hidden;
+      border-radius: 3px; overflow: hidden;
     }
     .mc-progress-fill {
-      height: 100%; border-radius: 4px;
+      height: 100%; border-radius: 3px;
       background: linear-gradient(90deg, #3b82f6, #60a5fa);
       transition: width 0.5s ease;
     }
@@ -139,27 +139,27 @@ import Layout from '../layouts/Layout.astro'
     .mc-temps {
       display: flex; flex-direction: column; gap: 0;
       border-left: 1px solid var(--border-subtle);
-      min-width: 120px;
+      min-width: 100px;
     }
     .mc-temp {
       flex: 1;
-      padding: 10px 14px;
+      padding: 6px 10px;
       display: flex; flex-direction: column; justify-content: center;
     }
     .mc-temp + .mc-temp { border-top: 1px solid var(--border-subtle); }
     .mc-temp-head {
-      display: flex; align-items: center; gap: 5px;
-      font-size: 0.6rem; color: var(--text-muted);
+      display: flex; align-items: center; gap: 4px;
+      font-size: 0.58rem; color: var(--text-muted);
       text-transform: uppercase; letter-spacing: 0.04em;
-      margin-bottom: 2px;
+      margin-bottom: 1px;
     }
-    .mc-temp-head svg { width: 12px; height: 12px; opacity: 0.6; }
+    .mc-temp-head svg { flex-shrink: 0; opacity: 0.5; }
     .mc-temp-val {
-      font-size: 1.1rem; font-weight: 700;
+      font-size: 0.88rem; font-weight: 700;
       font-family: var(--font-mono);
-      line-height: 1.1;
+      line-height: 1.2;
     }
-    .mc-temp-val small { font-size: 0.75rem; font-weight: 400; color: var(--text-muted); }
+    .mc-temp-val small { font-size: 0.68rem; font-weight: 400; color: var(--text-muted); }
 
     /* AMS panel */
     .mc-ams {
@@ -180,42 +180,42 @@ import Layout from '../layouts/Layout.astro'
       font-size: 0.6rem; color: var(--text-muted);
     }
     .mc-slots {
-      display: flex; gap: 5px; flex-wrap: wrap;
+      display: flex; gap: 4px; flex-wrap: wrap;
     }
     .mc-slot {
-      width: 82px;
+      width: 68px;
       background: var(--bg);
       border: 1px solid var(--border-subtle);
       border-radius: var(--radius-sm);
-      padding: 6px 5px 5px;
+      padding: 4px 4px 3px;
       text-align: center;
       position: relative;
       overflow: hidden;
     }
     .mc-slot.filled { border-color: var(--border); }
     .mc-slot-top {
-      display: flex; align-items: center; justify-content: center; gap: 4px;
-      margin-bottom: 3px;
+      display: flex; align-items: center; justify-content: center; gap: 3px;
+      margin-bottom: 2px;
     }
     .mc-slot-no {
-      font-size: 0.58rem; color: var(--text-muted); font-weight: 700;
+      font-size: 0.55rem; color: var(--text-muted); font-weight: 700;
     }
     .mc-slot-dot {
-      width: 14px; height: 14px; border-radius: 50%;
-      border: 2px solid var(--border);
+      width: 10px; height: 10px; border-radius: 50%;
+      border: 1.5px solid var(--border);
       flex-shrink: 0;
     }
     .mc-slot-mat {
-      font-size: 0.7rem; font-weight: 600;
+      font-size: 0.62rem; font-weight: 600;
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
     .mc-slot-name {
-      font-size: 0.58rem; color: var(--text-muted);
+      font-size: 0.52rem; color: var(--text-muted);
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
     .mc-slot-pct-wrap {
-      margin-top: 3px;
-      height: 4px; background: var(--bg-soft);
+      margin-top: 2px;
+      height: 3px; background: var(--bg-soft);
       border-radius: 2px; overflow: hidden;
     }
     .mc-slot-pct-bar {
@@ -223,43 +223,45 @@ import Layout from '../layouts/Layout.astro'
       transition: width 0.3s;
     }
     .mc-slot-pct-text {
-      font-size: 0.6rem; font-family: var(--font-mono);
-      margin-top: 2px;
+      font-size: 0.55rem; font-family: var(--font-mono);
+      margin-top: 1px;
     }
     .mc-slot-empty {
-      font-size: 0.68rem; color: var(--text-muted); opacity: 0.5;
-      padding: 6px 0;
+      font-size: 0.6rem; color: var(--text-muted); opacity: 0.5;
+      padding: 3px 0;
     }
 
     /* Idle card */
     .mc-idle {
-      padding: 16px;
+      padding: 10px;
       display: flex; align-items: center; justify-content: center;
-      color: var(--text-muted); font-size: 0.82rem; gap: 8px;
+      color: var(--text-muted); font-size: 0.78rem; gap: 6px;
     }
 
     /* Idle AMS below */
     .mc-ams-standalone {
-      padding: 10px 16px 14px;
+      padding: 6px 12px 10px;
       border-top: 1px solid var(--border-subtle);
     }
-    .mc-ams-standalone .mc-ams-head { margin-bottom: 6px; }
+    .mc-ams-standalone .mc-ams-head { margin-bottom: 4px; }
     .mc-ams-standalone .mc-slots { justify-content: flex-start; }
 
     /* ── Responsive ── */
     @media (max-width: 900px) {
       .mc-body { grid-template-columns: 1fr; }
-      .mc-cam { width: 100%; height: 180px; border-right: none; border-bottom: 1px solid var(--border-subtle); }
-      .mc-cam-none { width: 100%; height: 40px; border-right: none; border-bottom: 1px solid var(--border-subtle); }
+      .mc-cam { width: 100%; height: 150px; border-right: none; border-bottom: 1px solid var(--border-subtle); }
+      .mc-cam-none { display: none; }
       .mc-temps { flex-direction: row; border-left: none; border-top: 1px solid var(--border-subtle); min-width: 0; }
       .mc-temp + .mc-temp { border-top: none; border-left: 1px solid var(--border-subtle); }
       .mc-temp { flex: 1; }
       .mc-ams { border-left: none; border-top: 1px solid var(--border-subtle); }
     }
     @media (max-width: 520px) {
-      .mon-header h1 { font-size: 1.2rem; }
-      .mc-cam { height: 140px; }
-      .mc-slot { width: 72px; }
+      .mon-header h1 { font-size: 1.1rem; }
+      .mc-cam { height: 120px; }
+      .mc-slot { width: 60px; }
+      .mc-slot-mat { font-size: 0.58rem; }
+      .mc-temp-val { font-size: 0.8rem; }
     }
   </style>
 
@@ -299,10 +301,10 @@ import Layout from '../layouts/Layout.astro'
       return s === 'printing' || s === 'paused' || s === 'preparing'
     }
 
-    const SVG_NOZZLE = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v6m0 0a4 4 0 014 4v2a2 2 0 01-2 2h-4a2 2 0 01-2-2v-2a4 4 0 014-4z"/><path d="M10 18v4m4-4v4"/></svg>`
-    const SVG_BED = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="14" width="18" height="4" rx="1"/><path d="M4 14V8a2 2 0 012-2h12a2 2 0 012 2v6"/></svg>`
-    const SVG_FILE = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`
-    const SVG_CLOCK = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" opacity="0.4"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>`
+    const SVG_NOZZLE = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 14.76V3.5a2.5 2.5 0 00-5 0v11.26a4.5 4.5 0 105 0z"/></svg>`
+    const SVG_BED = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/></svg>`
+    const SVG_FILE = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`
+    const SVG_CLOCK = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" opacity="0.4"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>`
 
     function renderSlot(s: any): string {
       if (!s.present) {
