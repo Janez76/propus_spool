@@ -267,43 +267,52 @@ interface PaginatedResponse<T> {
     .spool-legend {
       display: flex;
       flex-direction: column;
-      gap: 1px;
+      gap: 2px;
       flex: 1;
       min-width: 0;
     }
     .spool-legend-item {
       display: flex;
       align-items: center;
-      gap: 7px;
-      padding: 3px 5px;
-      border-radius: 4px;
+      gap: 8px;
+      padding: 5px 6px;
+      border-radius: 6px;
       cursor: pointer;
       transition: background 0.15s ease;
     }
     .spool-legend-item:hover { background: var(--bg-soft); }
     .spool-legend-item.active { background: var(--bg-soft); }
-    .spool-legend-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
+    .sl-icon {
+      width: 26px;
+      height: 26px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       flex-shrink: 0;
-      display: inline-block;
     }
+    .sl-icon svg { width: 14px; height: 14px; }
     .spool-legend-info {
       flex: 1;
       min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
     .spool-legend-label {
-      font-size: 0.72rem;
-      font-weight: 500;
+      font-size: 0.75rem;
+      font-weight: 600;
       color: var(--text);
       line-height: 1;
     }
+    .spool-legend-bar-wrap {
+      flex: 1;
+      min-width: 30px;
+    }
     .spool-legend-bar {
-      height: 3px;
+      height: 4px;
       background: var(--bg-soft);
       border-radius: 2px;
-      margin-top: 3px;
       overflow: hidden;
     }
     .spool-legend-bar-fill {
@@ -311,16 +320,22 @@ interface PaginatedResponse<T> {
       border-radius: 2px;
       transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
+    .spool-legend-vals {
+      display: flex;
+      align-items: baseline;
+      gap: 4px;
+      flex-shrink: 0;
+    }
     .spool-legend-count {
-      font-size: 0.75rem;
+      font-size: 0.8rem;
       font-weight: 700;
-      min-width: 18px;
+      min-width: 16px;
       text-align: right;
     }
     .spool-legend-pct {
       font-size: 0.6rem;
       color: var(--text-muted);
-      min-width: 26px;
+      min-width: 28px;
       text-align: right;
     }
 
@@ -342,18 +357,19 @@ interface PaginatedResponse<T> {
       display: flex;
       align-items: center;
       gap: 10px;
-      padding: 8px 0;
-      font-size: 0.82rem;
-      border-bottom: 1px solid var(--border-subtle);
+      padding: 6px 4px;
+      border-radius: 6px;
+      transition: background 0.15s;
+      cursor: default;
     }
-    .color-row:last-child { border-bottom: none; }
+    .color-row:hover { background: var(--bg-soft); }
     .color-swatch {
-      width: 24px;
-      height: 24px;
-      border-radius: 50%;
-      border: 2px solid rgba(255,255,255,0.12);
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      border: 2px solid rgba(255,255,255,0.1);
       flex-shrink: 0;
-      box-shadow: 0 0 6px rgba(0,0,0,0.25);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.15);
     }
     .color-info {
       flex: 1;
@@ -364,32 +380,44 @@ interface PaginatedResponse<T> {
     }
     .color-info-top {
       display: flex;
-      justify-content: space-between;
-      align-items: baseline;
+      align-items: center;
+      gap: 6px;
     }
     .color-name {
       font-weight: 600;
+      font-size: 0.78rem;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
-    .color-count {
+    .color-hex {
       font-family: var(--font-mono);
+      font-size: 0.58rem;
+      color: var(--text-muted);
+      background: var(--bg-soft);
+      padding: 1px 5px;
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+    .color-count {
       font-size: 0.72rem;
+      font-weight: 700;
       color: var(--text-muted);
       flex-shrink: 0;
-      margin-left: 8px;
+      text-align: right;
+      min-width: 22px;
     }
     .color-bar {
-      height: 6px;
+      height: 4px;
       background: var(--bg-soft);
-      border-radius: 3px;
+      border-radius: 2px;
       overflow: hidden;
     }
     .color-bar-fill {
       height: 100%;
-      border-radius: 3px;
+      border-radius: 2px;
       transition: width 0.5s ease;
+      opacity: 0.8;
     }
 
     /* Shared widget list item styles */
@@ -1121,17 +1149,30 @@ interface PaginatedResponse<T> {
                 <div class="spool-legend" id="spool-legend">
                   ${segments.map(s => {
                     const pct = total > 0 ? Math.round((s.count / total) * 100) : 0;
+                    const icons: Record<string, string> = {
+                      full: '<path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>',
+                      normal: '<circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/>',
+                      low: '<path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
+                      critical: '<path d="M8.5 14.5A2.5 2.5 0 0011 12c0-1.38-.5-2-1-3-1.07-2.14 0-5.5 3-5.5 1.5 0 2.8 1.12 3 2.5l.5 4-2 3.5"/><path d="M12.5 18a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"/>',
+                      empty: '<circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>'
+                    };
                     return `
                       <div class="spool-legend-item" data-key="${s.key}">
-                        <span class="spool-legend-dot" style="background: ${s.color};"></span>
+                        <div class="sl-icon" style="background:${s.color}18;color:${s.color};">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${icons[s.key] || ''}</svg>
+                        </div>
                         <div class="spool-legend-info">
                           <div class="spool-legend-label">${s.label}</div>
-                          <div class="spool-legend-bar">
-                            <div class="spool-legend-bar-fill" style="width: ${pct}%; background: ${s.color};"></div>
+                          <div class="spool-legend-bar-wrap">
+                            <div class="spool-legend-bar">
+                              <div class="spool-legend-bar-fill" style="width: ${pct}%; background: ${s.color};"></div>
+                            </div>
                           </div>
                         </div>
-                        <span class="spool-legend-count" style="color: ${s.color};">${s.count}</span>
-                        <span class="spool-legend-pct">${pct}%</span>
+                        <div class="spool-legend-vals">
+                          <span class="spool-legend-count" style="color: ${s.color};">${s.count}</span>
+                          <span class="spool-legend-pct">${pct}%</span>
+                        </div>
                       </div>`;
                   }).join('')}
                 </div>
@@ -1216,20 +1257,23 @@ interface PaginatedResponse<T> {
             colorContainer.innerHTML = `<p style="color: var(--text-muted); font-size: 0.85rem;">${t('dashboard.noData')}</p>`
           } else {
             const maxCount = Math.max(...colors.map((c: any) => c.spool_count))
-            colorContainer.innerHTML = colors.map((c: any) => `
-              <div class="color-row">
+            colorContainer.innerHTML = colors.map((c: any) => {
+              const displayName = c.color_name && c.color_name !== c.hex_code ? c.color_name : ''
+              const barPct = Math.round((c.spool_count / maxCount) * 100)
+              return `<div class="color-row">
                 <div class="color-swatch" style="background: ${c.hex_code};"></div>
                 <div class="color-info">
                   <div class="color-info-top">
-                    <span class="color-name">${c.color_name}</span>
-                    <span class="color-count">${c.spool_count} ${c.spool_count === 1 ? 'Spule' : 'Spulen'}</span>
+                    <span class="color-name">${displayName || c.hex_code}</span>
+                    ${displayName ? `<span class="color-hex">${c.hex_code}</span>` : ''}
                   </div>
                   <div class="color-bar">
-                    <div class="color-bar-fill" style="width: ${Math.round((c.spool_count / maxCount) * 100)}%; background: ${c.hex_code};"></div>
+                    <div class="color-bar-fill" style="width: ${barPct}%; background: ${c.hex_code};"></div>
                   </div>
                 </div>
-              </div>
-            `).join('')
+                <span class="color-count">${c.spool_count}</span>
+              </div>`
+            }).join('')
           }
 
           // ── Widget: Recent Activity ──────────────────────────────
