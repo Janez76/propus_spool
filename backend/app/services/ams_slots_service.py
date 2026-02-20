@@ -173,6 +173,8 @@ class AmsSlotsService:
             self.db.add(assignment)
 
         is_manual = assignment.meta and assignment.meta.get("source") == "manual"
+        event_source = (meta or {}).get("source", "")
+        force_update = event_source == "klipper_poll"
 
         incoming_spool_id = spool.id if spool else None
         current_ext = assignment.external_id or ""
@@ -182,7 +184,7 @@ class AmsSlotsService:
         )
 
         assignment.present = True
-        if is_manual and not spool_changed:
+        if is_manual and not spool_changed and not force_update:
             if rfid_uid:
                 assignment.rfid_uid = rfid_uid
             if external_id:
@@ -251,13 +253,16 @@ class AmsSlotsService:
 
         if assignment:
             is_manual = assignment.meta and assignment.meta.get("source") == "manual"
-            if not is_manual:
+            event_source = (meta or {}).get("source", "")
+            force_remove = event_source == "klipper_poll"
+            if not is_manual or force_remove:
                 assignment.present = False
                 assignment.spool_id = None
                 assignment.rfid_uid = None
                 assignment.external_id = None
                 assignment.inserted_at = None
                 assignment.updated_at = event_at
+                assignment.meta = None
 
         event = await self._create_slot_event(
             printer_id=printer_id,

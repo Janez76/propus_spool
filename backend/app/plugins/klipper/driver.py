@@ -155,6 +155,7 @@ class Driver(BaseDriver):
                     "event_type": "spool_inserted",
                     "slot": {"slot_no": slot_no, "ams_unit_no": 0},
                     "identifiers": {"external_id": f"spoolman:{spool_id}"},
+                    "meta": {"source": "klipper_poll"},
                 })
                 logger.info(
                     f"Klipper printer {self.printer_id} slot {slot_no}: "
@@ -164,6 +165,7 @@ class Driver(BaseDriver):
                 self.emit({
                     "event_type": "spool_removed",
                     "slot": {"slot_no": slot_no, "ams_unit_no": 0},
+                    "meta": {"source": "klipper_poll"},
                 })
                 logger.info(
                     f"Klipper printer {self.printer_id} slot {slot_no}: empty"
