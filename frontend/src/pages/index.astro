@@ -158,6 +158,10 @@ interface PaginatedResponse<T> {
       max-height: 280px;
       overflow-y: auto;
     }
+    .widget[data-widget="spool-status"] .widget-body {
+      max-height: none;
+      overflow: visible;
+    }
 
     .customize-panel {
       position: fixed;
@@ -202,23 +206,154 @@ interface PaginatedResponse<T> {
     }
     .customize-item-label { font-size: 0.85rem; font-weight: 500; }
 
-    .status-bar {
+    .spool-chart-wrap {
       display: flex;
-      gap: 2px;
-      border-radius: var(--radius-sm);
-      overflow: hidden;
-      height: 32px;
-      margin-bottom: 8px;
+      align-items: center;
+      gap: 20px;
     }
-    .status-segment {
+    .spool-donut {
+      position: relative;
+      width: 140px;
+      height: 140px;
+      flex-shrink: 0;
+    }
+    .spool-donut svg { width: 100%; height: 100%; }
+    .spool-donut-segment {
+      transition: opacity 0.2s ease, filter 0.2s ease;
+      cursor: pointer;
+    }
+    .spool-donut-segment:hover {
+      filter: brightness(1.25);
+    }
+    .spool-donut.has-hover .spool-donut-segment:not(.active) {
+      opacity: 0.35;
+    }
+    .spool-donut-center {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+    .spool-donut-total {
+      font-size: 1.5rem;
+      font-weight: 800;
+      line-height: 1;
+      transition: transform 0.2s ease;
+    }
+    .spool-donut-sublabel {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .spool-legend {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex: 1;
+      min-width: 0;
+    }
+    .spool-legend-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 10px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: background 0.15s ease, transform 0.15s ease;
+      position: relative;
+    }
+    .spool-legend-item:hover {
+      background: var(--bg-soft);
+      transform: translateX(2px);
+    }
+    .spool-legend-item.active {
+      background: var(--bg-soft);
+    }
+    .spool-legend-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 0.7rem;
+      flex-shrink: 0;
+      position: relative;
+    }
+    .spool-legend-icon svg {
+      width: 16px;
+      height: 16px;
+    }
+    .spool-legend-icon::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      border: 2px solid currentColor;
+      opacity: 0.2;
+    }
+    .spool-legend-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .spool-legend-label {
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: var(--text);
+    }
+    .spool-legend-bar {
+      height: 4px;
+      background: var(--bg-soft);
+      border-radius: 2px;
+      margin-top: 3px;
+      overflow: hidden;
+    }
+    .spool-legend-bar-fill {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .spool-legend-count {
+      font-size: 0.85rem;
+      font-weight: 700;
+      min-width: 24px;
+      text-align: right;
+    }
+    .spool-legend-pct {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      min-width: 32px;
+      text-align: right;
+    }
+    .spool-tooltip {
+      position: absolute;
+      left: 50%;
+      top: -8px;
+      transform: translate(-50%, -100%);
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 6px 10px;
+      font-size: 0.75rem;
       font-weight: 600;
-      color: white;
-      min-width: 28px;
-      transition: flex var(--transition);
+      white-space: nowrap;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.15s ease;
+      box-shadow: var(--shadow-sm);
+      z-index: 10;
+    }
+    .spool-donut-segment.active ~ .spool-tooltip,
+    .spool-donut:hover .spool-tooltip {
+      opacity: 0;
+    }
+    @media (max-width: 500px) {
+      .spool-chart-wrap { flex-direction: column; align-items: stretch; }
+      .spool-donut { align-self: center; width: 120px; height: 120px; }
     }
 
     .weight-progress {
@@ -890,36 +1025,114 @@ interface PaginatedResponse<T> {
           // Total weight stat
           document.getElementById('stat-total-weight')!.textContent = formatWeight(dashboardData.total_weight_g || 0)
 
-          // ── Widget: Spool Status ─────────────────────────────────
+          // ── Widget: Spool Status (Interactive Donut) ─────────────
           const statusContainer = document.getElementById('spool-status')!
           const total = dist.full + dist.normal + dist.low + dist.critical + dist.empty
           const segments = [
-            { label: t('dashboard.statusFull'), color: '#22c55e', count: dist.full },
-            { label: t('dashboard.statusNormal'), color: '#3b82f6', count: dist.normal },
-            { label: t('dashboard.statusLow'), color: '#eab308', count: dist.low },
-            { label: t('dashboard.statusCritical'), color: '#ef4444', count: dist.critical },
-            { label: t('dashboard.statusEmpty'), color: '#6b7280', count: dist.empty },
-          ]
+            { key: 'full', label: t('dashboard.statusFull'), color: '#22c55e', count: dist.full },
+            { key: 'normal', label: t('dashboard.statusNormal'), color: '#3b82f6', count: dist.normal },
+            { key: 'low', label: t('dashboard.statusLow'), color: '#eab308', count: dist.low },
+            { key: 'critical', label: t('dashboard.statusCritical'), color: '#ef4444', count: dist.critical },
+            { key: 'empty', label: t('dashboard.statusEmpty'), color: '#6b7280', count: dist.empty },
+          ];
           
           if (total > 0) {
+            const R = 52, CX = 70, CY = 70, SW = 18;
+            const C = 2 * Math.PI * R;
+            let offset = 0;
+            const arcs = segments.filter(s => s.count > 0).map(s => {
+              const pct = s.count / total;
+              const dash = pct * C;
+              const gap = C - dash;
+              const arc = `<circle class="spool-donut-segment" data-key="${s.key}" cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="${s.color}" stroke-width="${SW}" stroke-dasharray="${dash} ${gap}" stroke-dashoffset="${-offset}" stroke-linecap="butt" />`;
+              offset += dash;
+              return arc;
+            });
+
+            const spoolSvgIcon = (color: string) => `<svg viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="9"/><line x1="12" y1="15" x2="12" y2="22"/><line x1="2" y1="12" x2="9" y2="12"/><line x1="15" y1="12" x2="22" y2="12"/></svg>`;
+
             statusContainer.innerHTML = `
-              <div class="status-bar">
-                ${segments.filter(s => s.count > 0).map(s => 
-                  `<div class="status-segment" style="flex: ${s.count}; background: ${s.color};" title="${s.label}: ${s.count}">${s.count}</div>`
-                ).join('')}
-              </div>
-              <div style="display: flex; gap: 14px; flex-wrap: wrap;">
-                ${segments.map(s => `
-                  <div style="display: flex; align-items: center; gap: 5px; font-size: 0.75rem;">
-                    <span style="width: 8px; height: 8px; border-radius: 2px; background: ${s.color}; display: inline-block;"></span>
-                    <span style="color: var(--text-muted);">${s.label}</span>
-                    <span style="font-weight: 600;">${s.count}</span>
+              <div class="spool-chart-wrap">
+                <div class="spool-donut" id="spool-donut">
+                  <svg viewBox="0 0 140 140" style="transform: rotate(-90deg);">
+                    <circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="var(--border-subtle)" stroke-width="${SW}" opacity="0.3" />
+                    ${arcs.join('')}
+                  </svg>
+                  <div class="spool-donut-center">
+                    <span class="spool-donut-total" id="donut-total">${total}</span>
+                    <span class="spool-donut-sublabel" id="donut-sublabel">${t('nav.spools')}</span>
                   </div>
-                `).join('')}
-              </div>
-            `
+                </div>
+                <div class="spool-legend" id="spool-legend">
+                  ${segments.map(s => {
+                    const pct = total > 0 ? Math.round((s.count / total) * 100) : 0;
+                    return `
+                      <div class="spool-legend-item" data-key="${s.key}">
+                        <div class="spool-legend-icon" style="color: ${s.color}; background: ${s.color}15;">
+                          ${spoolSvgIcon(s.color)}
+                        </div>
+                        <div class="spool-legend-info">
+                          <div class="spool-legend-label">${s.label}</div>
+                          <div class="spool-legend-bar">
+                            <div class="spool-legend-bar-fill" style="width: ${pct}%; background: ${s.color};"></div>
+                          </div>
+                        </div>
+                        <span class="spool-legend-count" style="color: ${s.color};">${s.count}</span>
+                        <span class="spool-legend-pct">${pct}%</span>
+                      </div>`;
+                  }).join('')}
+                </div>
+              </div>`;
+
+            const donut = document.getElementById('spool-donut')!;
+            const donutTotal = document.getElementById('donut-total')!;
+            const donutSub = document.getElementById('donut-sublabel')!;
+            const legendItems = document.querySelectorAll('.spool-legend-item');
+            const donutSegs = document.querySelectorAll('.spool-donut-segment');
+
+            function highlightKey(key: string | null) {
+              if (key) {
+                donut.classList.add('has-hover');
+                donutSegs.forEach(s => s.classList.toggle('active', s.getAttribute('data-key') === key));
+                legendItems.forEach(l => l.classList.toggle('active', l.getAttribute('data-key') === key));
+                const seg = segments.find(s => s.key === key);
+                if (seg) {
+                  donutTotal.textContent = String(seg.count);
+                  donutTotal.style.color = seg.color;
+                  donutSub.textContent = seg.label;
+                }
+              } else {
+                donut.classList.remove('has-hover');
+                donutSegs.forEach(s => s.classList.remove('active'));
+                legendItems.forEach(l => l.classList.remove('active'));
+                donutTotal.textContent = String(total);
+                donutTotal.style.color = '';
+                donutSub.textContent = t('nav.spools');
+              }
+            }
+
+            donutSegs.forEach(s => {
+              s.addEventListener('mouseenter', () => highlightKey(s.getAttribute('data-key')));
+              s.addEventListener('mouseleave', () => highlightKey(null));
+              s.addEventListener('click', () => {
+                const k = s.getAttribute('data-key');
+                if (k === 'low' || k === 'critical') { (window as any).openSpoolModal('low'); }
+                else if (k === 'empty') { (window as any).openSpoolModal('empty'); }
+                else { window.location.href = '/spools'; }
+              });
+            });
+            legendItems.forEach(l => {
+              l.addEventListener('mouseenter', () => highlightKey(l.getAttribute('data-key')));
+              l.addEventListener('mouseleave', () => highlightKey(null));
+              l.addEventListener('click', () => {
+                const k = l.getAttribute('data-key');
+                if (k === 'low' || k === 'critical') { (window as any).openSpoolModal('low'); }
+                else if (k === 'empty') { (window as any).openSpoolModal('empty'); }
+                else { window.location.href = '/spools'; }
+              });
+            });
           } else {
-            statusContainer.innerHTML = `<p style="color: var(--text-muted); font-size: 0.85rem;">${t('dashboard.noData')}</p>`
+            statusContainer.innerHTML = `<p style="color: var(--text-muted); font-size: 0.85rem;">${t('dashboard.noData')}</p>`;
           }
 
           // ── Widget: Total Weight ─────────────────────────────────
