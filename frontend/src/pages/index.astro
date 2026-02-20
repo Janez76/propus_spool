@@ -1104,26 +1104,26 @@ interface PaginatedResponse<T> {
             });
 
             statusContainer.innerHTML = `
-              <div class="spool-chart-wrap">
-                <div class="spool-donut" id="spool-donut">
-                  <svg viewBox="0 0 90 90" style="transform: rotate(-90deg);">
+              <div style="display:flex;align-items:center;gap:16px;">
+                <div id="spool-donut" style="position:relative;width:80px;height:80px;flex-shrink:0;">
+                  <svg viewBox="0 0 90 90" style="width:100%;height:100%;display:block;transform:rotate(-90deg);">
                     <circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="var(--border-subtle)" stroke-width="${SW}" opacity="0.3" />
                     ${arcs.join('')}
                   </svg>
-                  <div class="spool-donut-center">
-                    <span class="spool-donut-total" id="donut-total">${total}</span>
-                    <span class="spool-donut-sublabel" id="donut-sublabel">${t('nav.spools')}</span>
+                  <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;">
+                    <span id="donut-total" style="font-size:1rem;font-weight:800;line-height:1;transition:color 0.15s;">${total}</span>
+                    <span id="donut-sublabel" style="font-size:0.45rem;color:var(--text-muted);margin-top:1px;text-transform:uppercase;letter-spacing:0.04em;">${t('nav.spools')}</span>
                   </div>
                 </div>
-                <div class="spool-legend" id="spool-legend">
+                <div id="spool-legend" style="display:flex;flex-direction:column;gap:0;flex:1;min-width:0;">
                   ${segments.map(s => {
                     const pct = total > 0 ? Math.round((s.count / total) * 100) : 0;
                     return `
-                      <div class="spool-legend-item" data-key="${s.key}">
-                        <span class="spool-legend-dot" style="background:${s.color};"></span>
-                        <span class="spool-legend-label">${s.label}</span>
-                        <span class="spool-legend-count" style="color:${s.color};">${s.count}</span>
-                        <span class="spool-legend-pct">${pct}%</span>
+                      <div class="spool-legend-item" data-key="${s.key}" style="display:flex;align-items:center;gap:8px;padding:3px 4px;border-radius:4px;cursor:pointer;">
+                        <span style="width:8px;height:8px;border-radius:50%;background:${s.color};flex-shrink:0;"></span>
+                        <span style="flex:1;font-size:0.72rem;font-weight:500;line-height:1;">${s.label}</span>
+                        <span style="font-size:0.72rem;font-weight:700;color:${s.color};min-width:14px;text-align:right;">${s.count}</span>
+                        <span style="font-size:0.6rem;color:var(--text-muted);min-width:24px;text-align:right;">${pct}%</span>
                       </div>`;
                   }).join('')}
                 </div>
@@ -1209,20 +1209,21 @@ interface PaginatedResponse<T> {
           } else {
             const maxCount = Math.max(...colors.map((c: any) => c.spool_count))
             colorContainer.innerHTML = colors.map((c: any) => {
-              const displayName = c.color_name && c.color_name !== c.hex_code ? c.color_name : ''
+              const hex = (c.hex_code || '#888').trim()
+              const name = c.color_name && c.color_name.toLowerCase() !== hex.toLowerCase() ? c.color_name : ''
               const barPct = Math.round((c.spool_count / maxCount) * 100)
-              return `<div class="color-row">
-                <div class="color-swatch" style="background: ${c.hex_code};"></div>
-                <div class="color-info">
-                  <div class="color-info-top">
-                    <span class="color-name">${displayName || c.hex_code}</span>
-                    ${displayName ? `<span class="color-hex">${c.hex_code}</span>` : ''}
+              return `<div style="display:flex;align-items:center;gap:10px;padding:5px 2px;">
+                <div style="width:24px;height:24px;border-radius:6px;background:${hex};flex-shrink:0;border:2px solid rgba(255,255,255,0.08);box-shadow:0 1px 3px rgba(0,0,0,0.3);"></div>
+                <div style="flex:1;min-width:0;">
+                  <div style="display:flex;align-items:center;gap:6px;">
+                    <span style="font-weight:600;font-size:0.76rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${name || hex}</span>
+                    ${name ? `<span style="font-family:var(--font-mono);font-size:0.55rem;color:var(--text-muted);background:var(--bg-soft);padding:1px 4px;border-radius:3px;">${hex}</span>` : ''}
                   </div>
-                  <div class="color-bar">
-                    <div class="color-bar-fill" style="width: ${barPct}%; background: ${c.hex_code};"></div>
+                  <div style="height:3px;background:var(--bg-soft);border-radius:2px;overflow:hidden;margin-top:3px;">
+                    <div style="height:100%;width:${barPct}%;background:${hex};border-radius:2px;opacity:0.7;"></div>
                   </div>
                 </div>
-                <span class="color-count">${c.spool_count}</span>
+                <span style="font-size:0.72rem;font-weight:700;color:var(--text-muted);min-width:16px;text-align:right;">${c.spool_count}</span>
               </div>`
             }).join('')
           }
